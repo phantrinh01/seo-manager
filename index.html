@@ -322,6 +322,17 @@
       .view.active { display: block; }
       .hidden-file { display: none; }
 
+      /* ---------- Firebase ---------- */
+      .fb-box { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); padding: 13px 14px; }
+      .fb-status { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; }
+      .fb-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+      .fb-dot.on { background: var(--accent); }
+      .fb-dot.busy { background: #d9a441; }
+      .fb-dot.err { background: var(--red); }
+      .fb-user { font-size: 12.5px; color: var(--muted); margin-top: 4px; word-break: break-all; }
+      .fb-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+      .fb-rules { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px; min-height: 148px !important; white-space: pre; }
+
       /* ---------- Responsive ---------- */
       @media (max-width: 900px) {
         .app { grid-template-columns: 1fr; }
@@ -374,11 +385,21 @@
           <div class="project-list" id="projectList"></div>
         </div>
         <button class="btn block" id="addProjectBtn" type="button">+ Thêm dự án</button>
+        <div class="fb-box">
+          <p class="side-label" style="margin:0 0 8px">Đồng bộ Firebase</p>
+          <div class="fb-status"><span class="fb-dot" id="fbDot"></span><span id="fbStatus">Chưa kết nối</span></div>
+          <div class="fb-user" id="fbUser" style="display:none"></div>
+          <div class="fb-actions">
+            <button class="btn small block primary" id="fbSignInBtn" type="button" style="display:none">Đăng nhập bằng Google</button>
+            <button class="btn small block" id="fbSignOutBtn" type="button" style="display:none">Đăng xuất Firebase</button>
+            <button class="btn small block" id="fbSettingsBtn" type="button">Cài đặt Firebase</button>
+          </div>
+        </div>
         <div class="side-actions">
           <button class="btn" id="exportBtn" type="button">Xuất dữ liệu (JSON)</button>
           <button class="btn" id="importBtn" type="button">Nhập dữ liệu</button>
           <input type="file" id="importFile" class="hidden-file" accept="application/json,.json" />
-          <p class="side-note">Bản tĩnh cho GitHub Pages: dữ liệu lưu ngay trong trình duyệt của máy này. Hãy xuất JSON định kỳ để sao lưu và chuyển sang máy khác.</p>
+          <p class="side-note">Dữ liệu luôn có một bản lưu trong trình duyệt của máy này; khi đăng nhập Firebase, app tự đồng bộ thêm lên Firestore để dùng chung trên nhiều máy. Hãy xuất JSON định kỳ để sao lưu dự phòng.</p>
         </div>
       </aside>
 
@@ -501,8 +522,50 @@
       </div>
     </div>
 
+    <!-- Firebase settings -->
+    <div class="overlay" id="fbOverlay">
+      <div class="modal" role="dialog" aria-modal="true">
+        <h2>Cài đặt Firebase</h2>
+        <p class="modal-sub">App kết nối tới project Firebase của bạn để đồng bộ dữ liệu qua Firestore. Cấu hình dưới đây là của project <span class="mono">seo-manager-a09c3</span> bạn đã cung cấp; bạn có thể thay bằng project khác — cấu hình chỉ lưu trong trình duyệt này.</p>
+        <form id="fbForm">
+          <div class="form-grid">
+            <div class="field full"><label>API key</label><input id="fbCfgApiKey" type="text" autocomplete="off" spellcheck="false" /></div>
+            <div class="field full"><label>Auth domain</label><input id="fbCfgAuthDomain" type="text" autocomplete="off" spellcheck="false" /></div>
+            <div class="field"><label>Project ID</label><input id="fbCfgProjectId" type="text" autocomplete="off" spellcheck="false" /></div>
+            <div class="field"><label>Messaging sender ID</label><input id="fbCfgSenderId" type="text" autocomplete="off" spellcheck="false" /></div>
+            <div class="field full"><label>Storage bucket</label><input id="fbCfgBucket" type="text" autocomplete="off" spellcheck="false" /></div>
+            <div class="field full"><label>App ID</label><input id="fbCfgAppId" type="text" autocomplete="off" spellcheck="false" /></div>
+            <div class="field full"><label>Quy tắc bảo mật Firestore — dán vào Firebase Console → Firestore Database → Rules</label><textarea id="fbRules" class="fb-rules" readonly></textarea></div>
+          </div>
+          <p class="modal-sub" style="margin-top:14px">Điều kiện để đăng nhập chạy được: project đã tạo <strong>Firestore Database</strong> và bật phương thức đăng nhập <strong>Google</strong> (Authentication → Sign-in method). Nếu gặp lỗi “unauthorized-domain”, hãy thêm tên miền nơi bạn mở app (ví dụ <span class="mono">phantrinh01.github.io</span>) vào Authentication → Settings → Authorized domains.</p>
+          <div class="modal-actions">
+            <button class="btn danger-ghost" id="fbCfgReset" type="button">Về cấu hình mặc định</button>
+            <span class="spacer"></span>
+            <button class="btn" id="fbCopyRules" type="button">Sao chép rules</button>
+            <button class="btn" id="fbClose" type="button">Đóng</button>
+            <button class="btn primary" type="submit">Lưu &amp; kết nối</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Two-choice dialog (used by Firebase first-sync) -->
+    <div class="overlay" id="choiceOverlay">
+      <div class="modal" style="max-width:440px">
+        <h2 id="choiceTitle"></h2>
+        <p class="modal-sub" id="choiceText" style="margin-bottom:6px"></p>
+        <div class="modal-actions">
+          <button class="btn" id="choiceB" type="button"></button>
+          <button class="btn primary" id="choiceA" type="button"></button>
+        </div>
+      </div>
+    </div>
+
     <div class="toast" id="toast"></div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script>
       (function () {
         "use strict";
@@ -549,6 +612,7 @@
         }
         function save() {
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+          scheduleFbPush();
         }
         function activeProject() {
           for (var i = 0; i < state.projects.length; i++) {
@@ -1160,9 +1224,319 @@
           reader.readAsText(file);
         });
 
+        /* ---------------- Firebase: Auth + Firestore sync ---------------- */
+        var FB_CONFIG_KEY = "seo-manager-firebase-config-v1";
+        var DEFAULT_FB_CONFIG = {
+          apiKey: "AIzaSyAfrOLelyahR2FRJW95wn3F2phMCWE7tZg",
+          authDomain: "seo-manager-a09c3.firebaseapp.com",
+          projectId: "seo-manager-a09c3",
+          storageBucket: "seo-manager-a09c3.firebasestorage.app",
+          messagingSenderId: "245604446793",
+          appId: "1:245604446793:web:7a01ea40aaa641bce70598"
+        };
+        var FB_RULES = [
+          "rules_version = '2';",
+          "service cloud.firestore {",
+          "  match /databases/{database}/documents {",
+          "    match /users/{userId} {",
+          "      allow read, write: if request.auth != null && request.auth.uid == userId;",
+          "      match /{document=**} {",
+          "        allow read, write: if request.auth != null && request.auth.uid == userId;",
+          "      }",
+          "    }",
+          "  }",
+          "}"
+        ].join("\n");
+        var fb = {
+          app: null, auth: null, db: null, user: null, config: null,
+          listener: null, lastSyncedJson: null, pushTimer: null,
+          status: "off", statusText: "Chưa kết nối"
+        };
+
+        function fbRender() {
+          var dot = document.getElementById("fbDot");
+          var txt = document.getElementById("fbStatus");
+          var usr = document.getElementById("fbUser");
+          var inBtn = document.getElementById("fbSignInBtn");
+          var outBtn = document.getElementById("fbSignOutBtn");
+          if (!dot) return;
+          dot.className = "fb-dot" + (fb.status === "on" ? " on" : fb.status === "busy" ? " busy" : fb.status === "err" ? " err" : "");
+          txt.textContent = fb.statusText;
+          if (fb.user) {
+            usr.style.display = "";
+            usr.textContent = fb.user.email || fb.user.uid;
+            inBtn.style.display = "none";
+            outBtn.style.display = "";
+          } else {
+            usr.style.display = "none";
+            outBtn.style.display = "none";
+            inBtn.style.display = fb.auth ? "" : "none";
+          }
+        }
+        function fbSet(status, text) { fb.status = status; fb.statusText = text; fbRender(); }
+
+        function fbLoadConfig() {
+          try {
+            var raw = localStorage.getItem(FB_CONFIG_KEY);
+            if (raw) {
+              var p = JSON.parse(raw);
+              if (p && p.apiKey && p.projectId) { fb.config = p; return; }
+            }
+          } catch (e) {}
+          fb.config = {
+            apiKey: DEFAULT_FB_CONFIG.apiKey, authDomain: DEFAULT_FB_CONFIG.authDomain,
+            projectId: DEFAULT_FB_CONFIG.projectId, storageBucket: DEFAULT_FB_CONFIG.storageBucket,
+            messagingSenderId: DEFAULT_FB_CONFIG.messagingSenderId, appId: DEFAULT_FB_CONFIG.appId
+          };
+        }
+        function fbDocRef() { return fb.db.collection("users").doc(fb.user.uid); }
+
+        function fbAuthError(err) {
+          if (!err) return;
+          if (err.code === "auth/unauthorized-domain") {
+            toast("Tên miền này chưa được phép đăng nhập — thêm tên miền vào Firebase → Authentication → Settings → Authorized domains");
+          } else if (err.code === "auth/popup-closed-by-user") {
+            toast("Bạn đã đóng cửa sổ đăng nhập");
+          } else if (err.code === "auth/operation-not-allowed") {
+            toast("Hãy bật đăng nhập Google trong Firebase → Authentication → Sign-in method");
+          } else if (err.code === "auth/configuration-not-found") {
+            toast("Project chưa bật Authentication — vào Firebase → Authentication để bắt đầu");
+          } else {
+            toast("Lỗi Firebase: " + (err.code || err.message));
+          }
+        }
+
+        function applyRemoteData(json) {
+          try {
+            var parsed = JSON.parse(json);
+            if (!parsed || !Array.isArray(parsed.projects)) return false;
+            parsed.projects.forEach(ensureCollections);
+            state = parsed;
+            var hasActive = state.projects.some(function (p) { return p.id === state.activeId; });
+            if (!hasActive) state.activeId = state.projects.length ? state.projects[0].id : null;
+            fb.lastSyncedJson = json;
+            try { localStorage.setItem(STORAGE_KEY, json); } catch (e) {}
+            render();
+            return true;
+          } catch (e) { return false; }
+        }
+        function fbPushNow() {
+          if (!fb.user || !fb.db || typeof firebase === "undefined") return;
+          var json = JSON.stringify(state);
+          if (json === fb.lastSyncedJson) { fbSet("on", "Đã đồng bộ với Firebase"); return; }
+          fbSet("busy", "Đang đồng bộ lên Firebase…");
+          fbDocRef().set({
+            data: json,
+            email: fb.user.email || "",
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }).then(function () {
+            fb.lastSyncedJson = json;
+            var d = new Date();
+            fbSet("on", "Đã đồng bộ · " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"));
+          }).catch(function (err) {
+            fbSet("err", "Lỗi đồng bộ: " + (err.code || err.message));
+          });
+        }
+        function scheduleFbPush() {
+          if (!fb.user || !fb.db) return;
+          clearTimeout(fb.pushTimer);
+          fb.pushTimer = setTimeout(fbPushNow, 900);
+        }
+        function fbStartListener() {
+          if (fb.listener) { fb.listener(); fb.listener = null; }
+          fb.listener = fbDocRef().onSnapshot(function (snap) {
+            if (!fb.user || !snap.exists) return;
+            var d = snap.data();
+            if (!d || typeof d.data !== "string") return;
+            if (d.data === fb.lastSyncedJson) return;
+            if (d.data === JSON.stringify(state)) { fb.lastSyncedJson = d.data; return; }
+            if (applyRemoteData(d.data)) {
+              fbSet("on", "Đã đồng bộ với Firebase");
+              toast("Đã nhận dữ liệu mới từ Firebase");
+            }
+          }, function (err) {
+            fbSet("err", "Mất kết nối đồng bộ: " + (err.code || err.message));
+          });
+        }
+        function fbFirstSync() {
+          var ref = fbDocRef();
+          ref.get().then(function (snap) {
+            if (!fb.user) return;
+            if (snap.exists) {
+              var d = snap.data();
+              var remoteJson = d && typeof d.data === "string" ? d.data : null;
+              if (remoteJson && remoteJson !== JSON.stringify(state)) {
+                fbSet("busy", "Có dữ liệu khác trên Firebase — chờ bạn chọn");
+                askChoice(
+                  "Dữ liệu trên Firebase khác với máy này",
+                  "Chọn dùng dữ liệu trên Firebase (ghi đè dữ liệu đang có trong trình duyệt này), hoặc giữ dữ liệu máy này và đẩy lên Firebase.",
+                  "Dùng dữ liệu Firebase", "Giữ dữ liệu máy này",
+                  function () {
+                    if (applyRemoteData(remoteJson)) {
+                      fbSet("on", "Đã đồng bộ với Firebase");
+                      toast("Đã tải dữ liệu từ Firebase");
+                    }
+                    fbStartListener();
+                  },
+                  function () { fbPushNow(); fbStartListener(); }
+                );
+                return;
+              }
+              fb.lastSyncedJson = remoteJson;
+              fbSet("on", "Đã đồng bộ với Firebase");
+            } else {
+              fbPushNow();
+              toast("Đã đẩy dữ liệu hiện tại lên Firebase");
+            }
+            fbStartListener();
+          }).catch(function (err) {
+            fbSet("err", "Không đọc được Firestore: " + (err.code || err.message));
+            toast("Kiểm tra Firestore Database và security rules trong Firebase Console");
+          });
+        }
+        function fbInit() {
+          fbLoadConfig();
+          if (typeof firebase === "undefined") {
+            fbSet("err", "Không tải được thư viện Firebase — kiểm tra mạng rồi tải lại trang");
+            return;
+          }
+          if (!fb.config || !fb.config.apiKey || !fb.config.projectId || !fb.config.appId) {
+            fbSet("off", "Chưa có cấu hình — mở Cài đặt Firebase để điền");
+            return;
+          }
+          try {
+            fb.app = firebase.apps.length ? firebase.app() : firebase.initializeApp(fb.config);
+            if (!fb.app.options || fb.app.options.projectId !== fb.config.projectId) throw new Error("app-project-mismatch");
+          } catch (e) {
+            fbSet("err", "Không khởi tạo được Firebase: " + e.message);
+            return;
+          }
+          fb.auth = firebase.auth();
+          fb.db = firebase.firestore();
+          fbSet("off", "Sẵn sàng — đăng nhập Google để bật đồng bộ");
+          fb.auth.getRedirectResult().catch(function (err) { fbAuthError(err); });
+          fb.auth.onAuthStateChanged(function (user) {
+            if (user) {
+              fb.user = user;
+              fbSet("busy", "Đã đăng nhập — đang kiểm tra dữ liệu trên Firebase…");
+              fbFirstSync();
+            } else {
+              fb.user = null;
+              fb.lastSyncedJson = null;
+              if (fb.listener) { fb.listener(); fb.listener = null; }
+              fbSet("off", "Sẵn sàng — đăng nhập Google để bật đồng bộ");
+            }
+          });
+        }
+        function fbReinit(cfg) {
+          if (fb.listener) { fb.listener(); fb.listener = null; }
+          fb.user = null; fb.lastSyncedJson = null;
+          var old = fb.app;
+          fb.app = null; fb.auth = null; fb.db = null;
+          fbSet("busy", "Đang kết nối lại Firebase…");
+          if (old) old.delete().then(function () { fbInit(); }, function () { fbInit(); });
+          else fbInit();
+        }
+
+        /* Two-choice dialog */
+        var choiceCbA = null, choiceCbB = null;
+        function askChoice(title, text, labelA, labelB, cbA, cbB) {
+          document.getElementById("choiceTitle").textContent = title;
+          document.getElementById("choiceText").textContent = text;
+          document.getElementById("choiceA").textContent = labelA;
+          document.getElementById("choiceB").textContent = labelB;
+          choiceCbA = cbA; choiceCbB = cbB;
+          document.getElementById("choiceOverlay").classList.add("open");
+        }
+        document.getElementById("choiceA").addEventListener("click", function () {
+          document.getElementById("choiceOverlay").classList.remove("open");
+          var cb = choiceCbA; choiceCbA = choiceCbB = null; if (cb) cb();
+        });
+        document.getElementById("choiceB").addEventListener("click", function () {
+          document.getElementById("choiceOverlay").classList.remove("open");
+          var cb = choiceCbB; choiceCbA = choiceCbB = null; if (cb) cb();
+        });
+
+        /* Firebase buttons & settings */
+        document.getElementById("fbSignInBtn").addEventListener("click", function () {
+          if (!fb.auth || typeof firebase === "undefined") {
+            toast("Firebase chưa sẵn sàng — kiểm tra cấu hình ở Cài đặt Firebase");
+            return;
+          }
+          var provider = new firebase.auth.GoogleAuthProvider();
+          fbSet("busy", "Đang mở đăng nhập Google…");
+          fb.auth.signInWithPopup(provider).catch(function (err) {
+            if (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment" || err.code === "auth/cancelled-popup-request") {
+              fb.auth.signInWithRedirect(provider);
+            } else {
+              fbAuthError(err);
+              if (!fb.user) fbSet("off", "Sẵn sàng — đăng nhập Google để bật đồng bộ");
+            }
+          });
+        });
+        document.getElementById("fbSignOutBtn").addEventListener("click", function () {
+          if (fb.auth) fb.auth.signOut().then(function () {
+            toast("Đã đăng xuất Firebase — dữ liệu vẫn lưu trong trình duyệt này");
+          });
+        });
+        var fbOverlay = document.getElementById("fbOverlay");
+        function fbFillSettings(cfg) {
+          var c = cfg || fb.config || DEFAULT_FB_CONFIG;
+          document.getElementById("fbCfgApiKey").value = c.apiKey || "";
+          document.getElementById("fbCfgAuthDomain").value = c.authDomain || "";
+          document.getElementById("fbCfgProjectId").value = c.projectId || "";
+          document.getElementById("fbCfgSenderId").value = c.messagingSenderId || "";
+          document.getElementById("fbCfgBucket").value = c.storageBucket || "";
+          document.getElementById("fbCfgAppId").value = c.appId || "";
+          document.getElementById("fbRules").value = FB_RULES;
+        }
+        document.getElementById("fbSettingsBtn").addEventListener("click", function () {
+          fbFillSettings(null);
+          fbOverlay.classList.add("open");
+        });
+        document.getElementById("fbClose").addEventListener("click", function () { fbOverlay.classList.remove("open"); });
+        fbOverlay.addEventListener("click", function (e) { if (e.target === fbOverlay) fbOverlay.classList.remove("open"); });
+        document.getElementById("fbForm").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var cfg = {
+            apiKey: document.getElementById("fbCfgApiKey").value.trim(),
+            authDomain: document.getElementById("fbCfgAuthDomain").value.trim(),
+            projectId: document.getElementById("fbCfgProjectId").value.trim(),
+            storageBucket: document.getElementById("fbCfgBucket").value.trim(),
+            messagingSenderId: document.getElementById("fbCfgSenderId").value.trim(),
+            appId: document.getElementById("fbCfgAppId").value.trim()
+          };
+          if (!cfg.apiKey || !cfg.authDomain || !cfg.projectId || !cfg.appId) {
+            toast("Cần điền tối thiểu API key, Auth domain, Project ID và App ID");
+            return;
+          }
+          try { localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(cfg)); } catch (err) {}
+          fbOverlay.classList.remove("open");
+          toast("Đã lưu cấu hình — đang kết nối lại Firebase");
+          fbReinit(cfg);
+        });
+        document.getElementById("fbCfgReset").addEventListener("click", function () {
+          try { localStorage.removeItem(FB_CONFIG_KEY); } catch (e) {}
+          fbFillSettings(DEFAULT_FB_CONFIG);
+          toast("Đã điền lại cấu hình mặc định — bấm “Lưu & kết nối” để áp dụng");
+        });
+        document.getElementById("fbCopyRules").addEventListener("click", function () {
+          var ta = document.getElementById("fbRules");
+          ta.focus(); ta.select();
+          function done() { toast("Đã sao chép security rules"); }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(ta.value).then(done, function () { document.execCommand("copy"); done(); });
+          } else { document.execCommand("copy"); done(); }
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") fbOverlay.classList.remove("open");
+        });
+
         load();
         if (state.projects.length && !state.activeId) state.activeId = state.projects[0].id;
         render();
+        fbRender();
+        fbInit();
       })();
     </script>
   </body>
