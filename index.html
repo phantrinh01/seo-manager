@@ -1,0 +1,1169 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Quản lý dự án SEO — Bản tĩnh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f4f6f2;
+        --surface: #ffffff;
+        --surface-2: #edf1ea;
+        --ink: #182420;
+        --ink-2: #43534b;
+        --muted: #71807a;
+        --line: #dbe2d8;
+        --accent: #0d7a5f;
+        --accent-strong: #095c47;
+        --accent-soft: #e2f2ec;
+        --amber: #9a6206;
+        --amber-soft: #fbf0da;
+        --red: #b3261e;
+        --red-soft: #fbe9e7;
+        --blue: #1d5fa8;
+        --blue-soft: #e6effa;
+        --shadow: 0 10px 30px rgba(20, 40, 30, 0.10);
+        --radius: 14px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1512;
+          --surface: #171f1a;
+          --surface-2: #1e2821;
+          --ink: #e9efea;
+          --ink-2: #b9c6bd;
+          --muted: #8b9c91;
+          --line: #2b362e;
+          --accent: #34c79b;
+          --accent-strong: #5adbb2;
+          --accent-soft: #14352a;
+          --amber: #e8b45a;
+          --amber-soft: #3a2f14;
+          --red: #f08a84;
+          --red-soft: #3d1d1a;
+          --blue: #7db3ec;
+          --blue-soft: #1a2c44;
+          --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Be Vietnam Pro", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        font-size: 15px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      button, input, select, textarea { font: inherit; color: inherit; }
+      button { cursor: pointer; }
+      a { color: var(--accent-strong); }
+      .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+      .app {
+        display: grid;
+        grid-template-columns: 264px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      /* ---------- Sidebar ---------- */
+      .sidebar {
+        background: var(--surface);
+        border-right: 1px solid var(--line);
+        padding: 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+      }
+      .side-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 4px 8px;
+      }
+      .project-list { display: flex; flex-direction: column; gap: 6px; }
+      .project-item {
+        text-align: left;
+        border: 1px solid transparent;
+        background: transparent;
+        border-radius: 10px;
+        padding: 10px 12px;
+        width: 100%;
+      }
+      .project-item:hover { background: var(--surface-2); }
+      .project-item.active { background: var(--accent-soft); border-color: var(--accent); }
+      .project-item .pname { font-weight: 600; display: block; }
+      .project-item .pdomain { font-size: 12.5px; color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .side-actions { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+      .side-note { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 0 4px; }
+
+      /* ---------- Buttons ---------- */
+      .btn {
+        display: inline-flex; align-items: center; gap: 7px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--ink);
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+      }
+      .btn:hover { border-color: var(--accent); }
+      .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+      @media (prefers-color-scheme: dark) { .btn.primary { color: #0b1512; } }
+      .btn.primary:hover { background: var(--accent-strong); }
+      .btn.ghost { border-color: transparent; background: transparent; color: var(--ink-2); }
+      .btn.ghost:hover { background: var(--surface-2); }
+      .btn.danger-ghost { border-color: transparent; background: transparent; color: var(--red); }
+      .btn.danger-ghost:hover { background: var(--red-soft); }
+      .btn.small { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
+      .btn.block { width: 100%; justify-content: center; }
+
+      /* ---------- Main ---------- */
+      .main { padding: 26px 30px 60px; min-width: 0; }
+      .topbar {
+        display: flex; flex-wrap: wrap; gap: 14px;
+        align-items: flex-end; justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      .topbar h1 { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+      .topbar .domain { color: var(--muted); font-size: 14px; margin-top: 2px; }
+      .topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+      .tabs {
+        display: flex; gap: 4px; flex-wrap: wrap;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 4px;
+        margin-bottom: 22px;
+        width: fit-content;
+        max-width: 100%;
+      }
+      .tab {
+        border: none; background: transparent;
+        padding: 8px 16px; border-radius: 9px;
+        font-weight: 600; font-size: 14px; color: var(--ink-2);
+      }
+      .tab:hover { background: var(--surface-2); }
+      .tab.active { background: var(--accent); color: #fff; }
+      @media (prefers-color-scheme: dark) { .tab.active { color: #0b1512; } }
+      .tab .count {
+        font-family: "IBM Plex Mono", monospace; font-size: 12px;
+        background: var(--surface-2); border-radius: 20px; padding: 1px 7px; margin-left: 5px;
+      }
+      .tab.active .count { background: rgba(255,255,255,0.25); }
+
+      /* ---------- Dashboard ---------- */
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 22px;
+      }
+      .stat {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+      }
+      .stat .num { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+      .stat .lbl { color: var(--muted); font-size: 13px; margin-top: 4px; }
+      .stat .sub { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+
+      .dash-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; align-items: start; }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+      }
+      .panel h2 { font-size: 16px; font-weight: 700; margin: 0 0 14px; }
+      .bar-row { display: grid; grid-template-columns: 118px 1fr 34px; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 13.5px; }
+      .bar-track { background: var(--surface-2); border-radius: 6px; height: 14px; overflow: hidden; }
+      .bar-fill { height: 100%; border-radius: 6px; background: var(--accent); min-width: 0; }
+      .bar-fill.mid { background: #58a6d6; }
+      .bar-fill.low { background: #d9a441; }
+      .bar-fill.none { background: #b9c2ba; }
+      .bar-num { font-family: "IBM Plex Mono", monospace; text-align: right; }
+      .attention-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+      .attention-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+      .dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 7px; flex: none; }
+      .dot.red { background: var(--red); }
+      .dot.amber { background: #d9a441; }
+      .dot.blue { background: #58a6d6; }
+      .empty-note { color: var(--muted); font-size: 14px; margin: 0; }
+
+      /* ---------- Toolbar & tables ---------- */
+      .toolbar {
+        display: flex; flex-wrap: wrap; gap: 10px;
+        align-items: center; justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      .toolbar-left { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .search, .filter-select {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 14px;
+      }
+      .search { min-width: 230px; }
+      .search:focus, .filter-select:focus, input:focus, select:focus, textarea:focus {
+        outline: 2px solid var(--accent); outline-offset: 1px;
+      }
+      .table-wrap {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      thead th {
+        text-align: left; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+        color: var(--muted); font-weight: 700;
+        padding: 12px 14px; border-bottom: 1px solid var(--line);
+        background: var(--surface-2);
+        white-space: nowrap;
+      }
+      tbody td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      tbody tr:last-child td { border-bottom: none; }
+      tbody tr:hover { background: var(--surface-2); }
+      td.num, th.num { text-align: right; font-family: "IBM Plex Mono", monospace; white-space: nowrap; }
+      .cell-main { font-weight: 600; }
+      .cell-sub { font-size: 12.5px; color: var(--muted); word-break: break-all; }
+      .row-actions { display: flex; gap: 2px; justify-content: flex-end; }
+      .pos-badge {
+        display: inline-block; min-width: 34px; text-align: center;
+        font-family: "IBM Plex Mono", monospace; font-weight: 600;
+        border-radius: 8px; padding: 2px 8px; font-size: 13.5px;
+      }
+      .pos-top3 { background: var(--accent-soft); color: var(--accent-strong); }
+      .pos-top10 { background: var(--blue-soft); color: var(--blue); }
+      .pos-top20 { background: var(--amber-soft); color: var(--amber); }
+      .pos-far { background: var(--surface-2); color: var(--muted); }
+      .chip {
+        display: inline-block; border-radius: 20px; padding: 2px 10px;
+        font-size: 12.5px; font-weight: 600; white-space: nowrap;
+      }
+      .chip.green { background: var(--accent-soft); color: var(--accent-strong); }
+      .chip.amber { background: var(--amber-soft); color: var(--amber); }
+      .chip.red { background: var(--red-soft); color: var(--red); }
+      .chip.blue { background: var(--blue-soft); color: var(--blue); }
+      .chip.gray { background: var(--surface-2); color: var(--ink-2); }
+      .diff-bar { display: inline-block; width: 54px; height: 7px; border-radius: 4px; background: var(--surface-2); vertical-align: middle; margin-right: 7px; overflow: hidden; }
+      .diff-fill { height: 100%; background: #d9a441; }
+      .diff-fill.hard { background: var(--red); }
+      .diff-fill.easy { background: var(--accent); }
+
+      .empty-state {
+        background: var(--surface);
+        border: 1px dashed var(--line);
+        border-radius: var(--radius);
+        padding: 42px 24px;
+        text-align: center;
+      }
+      .empty-state h3 { margin: 0 0 6px; font-size: 17px; }
+      .empty-state p { color: var(--muted); margin: 0 auto 16px; max-width: 430px; }
+
+      /* ---------- Modal ---------- */
+      .overlay {
+        position: fixed; inset: 0;
+        background: rgba(10, 18, 14, 0.55);
+        display: none; align-items: flex-start; justify-content: center;
+        padding: 30px 14px; overflow-y: auto; z-index: 50;
+      }
+      .overlay.open { display: flex; }
+      .modal {
+        background: var(--surface);
+        border-radius: 16px;
+        width: 100%; max-width: 560px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+      .modal h2 { margin: 0 0 4px; font-size: 19px; font-weight: 700; }
+      .modal .modal-sub { color: var(--muted); font-size: 13.5px; margin: 0 0 18px; }
+      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+      .field { display: flex; flex-direction: column; gap: 5px; }
+      .field.full { grid-column: 1 / -1; }
+      .field label { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+      .field input, .field select, .field textarea {
+        border: 1px solid var(--line); background: var(--bg);
+        border-radius: 9px; padding: 9px 11px; font-size: 14px; width: 100%;
+      }
+      .field textarea { min-height: 74px; resize: vertical; }
+      .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+      .modal-actions .spacer { flex: 1; }
+
+      .toast {
+        position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+        background: var(--ink); color: var(--bg);
+        padding: 11px 18px; border-radius: 11px; font-size: 14px; font-weight: 600;
+        opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 80;
+        max-width: calc(100vw - 32px); text-align: center;
+      }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+      .view { display: none; }
+      .view.active { display: block; }
+      .hidden-file { display: none; }
+
+      /* ---------- Responsive ---------- */
+      @media (max-width: 900px) {
+        .app { grid-template-columns: 1fr; }
+        .sidebar {
+          position: static; height: auto;
+          border-right: none; border-bottom: 1px solid var(--line);
+          padding: 14px;
+        }
+        .project-list { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+        .project-item { min-width: 170px; }
+        .side-actions { margin-top: 0; flex-direction: row; flex-wrap: wrap; }
+        .side-actions .btn { flex: 1; }
+        .main { padding: 18px 14px 50px; }
+        .dash-grid { grid-template-columns: 1fr; }
+        .topbar h1 { font-size: 22px; }
+      }
+      @media (max-width: 720px) {
+        .table-wrap { background: transparent; border: none; overflow: visible; }
+        table, thead, tbody, tr, td { display: block; width: 100%; }
+        thead { display: none; }
+        tbody tr {
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          margin-bottom: 10px;
+          padding: 8px 4px;
+        }
+        tbody td {
+          border-bottom: none; padding: 6px 14px;
+          display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
+        }
+        tbody td::before {
+          content: attr(data-label);
+          font-size: 11.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+          color: var(--muted); padding-top: 3px; flex: none;
+        }
+        td.num { text-align: right; }
+        .row-actions { justify-content: flex-end; }
+        .form-grid { grid-template-columns: 1fr; }
+        .search { min-width: 0; width: 100%; }
+        .toolbar-left { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div>
+          <p class="side-label">Dự án</p>
+          <div class="project-list" id="projectList"></div>
+        </div>
+        <button class="btn block" id="addProjectBtn" type="button">+ Thêm dự án</button>
+        <div class="side-actions">
+          <button class="btn" id="exportBtn" type="button">Xuất dữ liệu (JSON)</button>
+          <button class="btn" id="importBtn" type="button">Nhập dữ liệu</button>
+          <input type="file" id="importFile" class="hidden-file" accept="application/json,.json" />
+          <p class="side-note">Bản tĩnh cho GitHub Pages: dữ liệu lưu ngay trong trình duyệt của máy này. Hãy xuất JSON định kỳ để sao lưu và chuyển sang máy khác.</p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="topbar">
+          <div>
+            <h1 id="projectTitle">Chưa có dự án</h1>
+            <div class="domain" id="projectDomain"></div>
+          </div>
+          <div class="topbar-actions" id="projectActions" style="display:none">
+            <button class="btn" id="editProjectBtn" type="button">Sửa dự án</button>
+            <button class="btn danger-ghost" id="deleteProjectBtn" type="button">Xoá dự án</button>
+          </div>
+        </div>
+
+        <nav class="tabs" id="tabs" style="display:none">
+          <button class="tab active" data-view="dashboard" type="button">Tổng quan</button>
+          <button class="tab" data-view="keywords" type="button">Từ khoá <span class="count" id="countKw">0</span></button>
+          <button class="tab" data-view="articles" type="button">Bài viết <span class="count" id="countArt">0</span></button>
+          <button class="tab" data-view="backlinks" type="button">Backlink <span class="count" id="countBl">0</span></button>
+        </nav>
+
+        <section id="noProject" class="empty-state">
+          <h3>Bắt đầu bằng dự án đầu tiên</h3>
+          <p>Tạo một dự án cho mỗi website bạn làm SEO, rồi thêm từ khoá, bài viết và backlink vào từng dự án.</p>
+          <button class="btn primary" id="firstProjectBtn" type="button">+ Tạo dự án đầu tiên</button>
+        </section>
+
+        <!-- Dashboard -->
+        <section class="view" id="view-dashboard">
+          <div class="stat-grid" id="statGrid"></div>
+          <div class="dash-grid">
+            <div class="panel">
+              <h2>Phân bố thứ hạng từ khoá</h2>
+              <div id="rankChart"></div>
+            </div>
+            <div class="panel">
+              <h2>Cần chú ý</h2>
+              <ul class="attention-list" id="attentionList"></ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Keywords -->
+        <section class="view" id="view-keywords">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input class="search" id="kwSearch" type="search" placeholder="Tìm từ khoá hoặc URL đích…" />
+              <select class="filter-select" id="kwClusterFilter"><option value="">Tất cả cụm chủ đề</option></select>
+              <select class="filter-select" id="kwIntentFilter">
+                <option value="">Mọi ý định</option>
+                <option>Thông tin</option><option>Điều hướng</option>
+                <option>Thương mại</option><option>Giao dịch</option>
+              </select>
+            </div>
+            <button class="btn primary" id="addKwBtn" type="button">+ Thêm từ khoá</button>
+          </div>
+          <div id="kwBody"></div>
+        </section>
+
+        <!-- Articles -->
+        <section class="view" id="view-articles">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input class="search" id="artSearch" type="search" placeholder="Tìm tiêu đề hoặc người viết…" />
+              <select class="filter-select" id="artStatusFilter">
+                <option value="">Mọi trạng thái</option>
+                <option>Ý tưởng</option><option>Đang viết</option>
+                <option>Chờ duyệt</option><option>Đã xuất bản</option>
+              </select>
+            </div>
+            <button class="btn primary" id="addArtBtn" type="button">+ Thêm bài viết</button>
+          </div>
+          <div id="artBody"></div>
+        </section>
+
+        <!-- Backlinks -->
+        <section class="view" id="view-backlinks">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input class="search" id="blSearch" type="search" placeholder="Tìm URL nguồn, URL đích hoặc anchor…" />
+              <select class="filter-select" id="blStatusFilter">
+                <option value="">Mọi trạng thái</option>
+                <option>Đang sống</option><option>Chờ kiểm tra</option><option>Đã mất</option>
+              </select>
+            </div>
+            <button class="btn primary" id="addBlBtn" type="button">+ Thêm backlink</button>
+          </div>
+          <div id="blBody"></div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Modal -->
+    <div class="overlay" id="overlay">
+      <div class="modal" role="dialog" aria-modal="true">
+        <h2 id="modalTitle"></h2>
+        <p class="modal-sub" id="modalSub"></p>
+        <form id="modalForm">
+          <div class="form-grid" id="modalFields"></div>
+          <div class="modal-actions">
+            <button class="btn danger-ghost" id="modalDelete" type="button" style="display:none">Xoá</button>
+            <span class="spacer"></span>
+            <button class="btn" id="modalCancel" type="button">Huỷ</button>
+            <button class="btn primary" type="submit">Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Confirm -->
+    <div class="overlay" id="confirmOverlay">
+      <div class="modal" style="max-width:420px">
+        <h2 id="confirmTitle">Xác nhận</h2>
+        <p class="modal-sub" id="confirmText" style="margin-bottom:6px"></p>
+        <div class="modal-actions">
+          <button class="btn" id="confirmCancel" type="button">Huỷ</button>
+          <button class="btn primary" id="confirmOk" type="button" style="background:var(--red);border-color:var(--red);color:#fff">Xoá</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      (function () {
+        "use strict";
+        var STORAGE_KEY = "seo-manager-static-v1";
+
+        function uid() {
+          return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        }
+        function esc(s) {
+          return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+        function fmtNum(n) {
+          if (n === "" || n === null || n === undefined || isNaN(Number(n))) return "—";
+          return Number(n).toLocaleString("vi-VN");
+        }
+        function fmtMoney(n) {
+          if (!n) return "—";
+          return Number(n).toLocaleString("vi-VN") + "₫";
+        }
+        function safeUrl(u) {
+          if (!u) return "";
+          var t = String(u).trim();
+          if (/^https?:\/\//i.test(t)) return t;
+          if (/^[\w-]+(\.[\w-]+)+/.test(t)) return "https://" + t;
+          return "";
+        }
+        function shortUrl(u) {
+          if (!u) return "—";
+          return String(u).replace(/^https?:\/\//i, "").replace(/\/$/, "");
+        }
+
+        /* ---------------- State ---------------- */
+        var state = { projects: [], activeId: null };
+        function load() {
+          try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+              var parsed = JSON.parse(raw);
+              if (parsed && Array.isArray(parsed.projects)) state = parsed;
+            }
+          } catch (e) { /* storage unavailable: run in-memory */ }
+        }
+        function save() {
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+        }
+        function activeProject() {
+          for (var i = 0; i < state.projects.length; i++) {
+            if (state.projects[i].id === state.activeId) return state.projects[i];
+          }
+          return state.projects[0] || null;
+        }
+        function ensureCollections(p) {
+          if (!Array.isArray(p.keywords)) p.keywords = [];
+          if (!Array.isArray(p.articles)) p.articles = [];
+          if (!Array.isArray(p.backlinks)) p.backlinks = [];
+          return p;
+        }
+
+        /* ---------------- Toast & confirm ---------------- */
+        var toastTimer = null;
+        function toast(msg) {
+          var el = document.getElementById("toast");
+          el.textContent = msg;
+          el.classList.add("show");
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
+        }
+        var confirmCb = null;
+        function askConfirm(title, text, cb) {
+          document.getElementById("confirmTitle").textContent = title;
+          document.getElementById("confirmText").textContent = text;
+          confirmCb = cb;
+          document.getElementById("confirmOverlay").classList.add("open");
+        }
+        document.getElementById("confirmCancel").addEventListener("click", function () {
+          document.getElementById("confirmOverlay").classList.remove("open");
+          confirmCb = null;
+        });
+        document.getElementById("confirmOk").addEventListener("click", function () {
+          document.getElementById("confirmOverlay").classList.remove("open");
+          if (confirmCb) confirmCb();
+          confirmCb = null;
+        });
+
+        /* ---------------- Modal form engine ---------------- */
+        var overlay = document.getElementById("overlay");
+        var modalForm = document.getElementById("modalForm");
+        var modalFields = document.getElementById("modalFields");
+        var currentSubmit = null, currentDelete = null;
+
+        function fieldHtml(f) {
+          var full = f.full ? " full" : "";
+          var req = f.required ? " required" : "";
+          var val = f.value == null ? "" : f.value;
+          var inner = "";
+          if (f.type === "select") {
+            var opts = "";
+            for (var i = 0; i < f.options.length; i++) {
+              var o = f.options[i];
+              var ov = typeof o === "string" ? o : o.value;
+              var ol = typeof o === "string" ? o : o.label;
+              opts += '<option value="' + esc(ov) + '"' + (String(ov) === String(val) ? " selected" : "") + ">" + esc(ol) + "</option>";
+            }
+            inner = '<select name="' + f.name + '"' + req + ">" + opts + "</select>";
+          } else if (f.type === "textarea") {
+            inner = '<textarea name="' + f.name + '" placeholder="' + esc(f.placeholder || "") + '"' + req + ">" + esc(val) + "</textarea>";
+          } else {
+            inner = '<input name="' + f.name + '" type="' + (f.type || "text") + '" value="' + esc(val) + '" placeholder="' + esc(f.placeholder || "") + '"' + (f.min != null ? ' min="' + f.min + '"' : "") + (f.max != null ? ' max="' + f.max + '"' : "") + (f.step ? ' step="' + f.step + '"' : "") + req + " />";
+          }
+          return '<div class="field' + full + '"><label>' + esc(f.label) + "</label>" + inner + "</div>";
+        }
+        function openModal(title, sub, fields, onSubmit, onDelete) {
+          document.getElementById("modalTitle").textContent = title;
+          document.getElementById("modalSub").textContent = sub || "";
+          modalFields.innerHTML = fields.map(fieldHtml).join("");
+          currentSubmit = onSubmit;
+          currentDelete = onDelete || null;
+          document.getElementById("modalDelete").style.display = onDelete ? "" : "none";
+          overlay.classList.add("open");
+          var first = modalFields.querySelector("input, select, textarea");
+          if (first) setTimeout(function () { first.focus(); }, 40);
+        }
+        function closeModal() { overlay.classList.remove("open"); currentSubmit = null; currentDelete = null; }
+        document.getElementById("modalCancel").addEventListener("click", closeModal);
+        overlay.addEventListener("click", function (e) { if (e.target === overlay) closeModal(); });
+        document.getElementById("modalDelete").addEventListener("click", function () {
+          if (currentDelete) { var cb = currentDelete; closeModal(); cb(); }
+        });
+        modalForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          if (!currentSubmit) return;
+          var data = {};
+          var fd = new FormData(modalForm);
+          fd.forEach(function (v, k) { data[k] = v; });
+          currentSubmit(data);
+          closeModal();
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") {
+            closeModal();
+            document.getElementById("confirmOverlay").classList.remove("open");
+          }
+        });
+
+        /* ---------------- Projects ---------------- */
+        function projectFields(p) {
+          return [
+            { name: "name", label: "Tên dự án", required: true, value: p ? p.name : "", placeholder: "Ví dụ: Website camera An Phát" },
+            { name: "domain", label: "Website / domain", value: p ? p.domain : "", placeholder: "Ví dụ: example.com" }
+          ];
+        }
+        function openProjectModal(p) {
+          openModal(
+            p ? "Sửa dự án" : "Thêm dự án",
+            "Mỗi dự án tương ứng với một website bạn đang làm SEO.",
+            projectFields(p),
+            function (data) {
+              if (p) {
+                p.name = data.name.trim(); p.domain = data.domain.trim();
+                toast("Đã cập nhật dự án");
+              } else {
+                var np = ensureCollections({ id: uid(), name: data.name.trim(), domain: data.domain.trim(), keywords: [], articles: [], backlinks: [] });
+                state.projects.push(np);
+                state.activeId = np.id;
+                toast("Đã tạo dự án mới");
+              }
+              save(); render();
+            },
+            p ? function () {
+              askConfirm("Xoá dự án?", "Toàn bộ từ khoá, bài viết và backlink trong dự án “" + p.name + "” sẽ bị xoá.", function () {
+                state.projects = state.projects.filter(function (x) { return x.id !== p.id; });
+                if (state.activeId === p.id) state.activeId = state.projects.length ? state.projects[0].id : null;
+                save(); render(); toast("Đã xoá dự án");
+              });
+            } : null
+          );
+        }
+        document.getElementById("addProjectBtn").addEventListener("click", function () { openProjectModal(null); });
+        document.getElementById("firstProjectBtn").addEventListener("click", function () { openProjectModal(null); });
+        document.getElementById("editProjectBtn").addEventListener("click", function () {
+          var p = activeProject(); if (p) openProjectModal(p);
+        });
+
+
+        /* ---------------- Keywords ---------------- */
+        var INTENTS = ["Thông tin", "Điều hướng", "Thương mại", "Giao dịch"];
+        function clustersOf(p) {
+          var seen = {}, out = [];
+          p.keywords.forEach(function (k) {
+            if (k.cluster && !seen[k.cluster]) { seen[k.cluster] = 1; out.push(k.cluster); }
+          });
+          return out.sort();
+        }
+        function kwFields(p, k) {
+          var clusterOpts = clustersOf(p).map(function (c) { return { value: c, label: c }; });
+          var fields = [
+            { name: "keyword", label: "Từ khoá", required: true, full: true, value: k ? k.keyword : "", placeholder: "Ví dụ: lắp đặt camera trọn gói" },
+            { name: "cluster", label: "Cụm chủ đề (topic cluster)", value: k ? k.cluster : "", placeholder: "Ví dụ: Camera trọn gói" },
+            { name: "intent", label: "Ý định tìm kiếm", type: "select", options: INTENTS, value: k ? k.intent : "Thông tin" },
+            { name: "volume", label: "Volume / tháng", type: "number", min: 0, value: k ? k.volume : "" },
+            { name: "difficulty", label: "Độ khó (0–100)", type: "number", min: 0, max: 100, value: k ? k.difficulty : "" },
+            { name: "position", label: "Vị trí hiện tại (trống = chưa vào top 100)", type: "number", min: 1, max: 100, value: k ? k.position : "" },
+            { name: "targetUrl", label: "URL đích", full: true, value: k ? k.targetUrl : "", placeholder: "https://…" }
+          ];
+          return fields;
+        }
+        function openKwModal(p, k) {
+          openModal(
+            k ? "Sửa từ khoá" : "Thêm từ khoá",
+            "Nhóm các từ khoá theo cụm chủ đề để tránh ăn thịt từ khoá (cannibalization).",
+            kwFields(p, k),
+            function (data) {
+              var rec = {
+                keyword: data.keyword.trim(),
+                cluster: (data.cluster || "").trim(),
+                intent: data.intent,
+                volume: data.volume === "" ? null : Number(data.volume),
+                difficulty: data.difficulty === "" ? null : Number(data.difficulty),
+                position: data.position === "" ? null : Number(data.position),
+                targetUrl: (data.targetUrl || "").trim()
+              };
+              if (k) { Object.assign(k, rec); toast("Đã cập nhật từ khoá"); }
+              else { rec.id = uid(); p.keywords.push(rec); toast("Đã thêm từ khoá"); }
+              save(); render();
+            },
+            k ? function () {
+              askConfirm("Xoá từ khoá?", "“" + k.keyword + "” sẽ bị xoá khỏi dự án.", function () {
+                p.keywords = p.keywords.filter(function (x) { return x.id !== k.id; });
+                save(); render(); toast("Đã xoá từ khoá");
+              });
+            } : null
+          );
+        }
+        function posBadge(pos) {
+          if (pos === null || pos === undefined || pos === "") return '<span class="pos-badge pos-far">—</span>';
+          var cls = pos <= 3 ? "pos-top3" : pos <= 10 ? "pos-top10" : pos <= 20 ? "pos-top20" : "pos-far";
+          return '<span class="pos-badge ' + cls + '">' + pos + "</span>";
+        }
+        function diffHtml(d) {
+          if (d === null || d === undefined || d === "") return "—";
+          var cls = d >= 70 ? "hard" : d >= 40 ? "" : "easy";
+          return '<span class="diff-bar"><span class="diff-fill ' + cls + '" style="display:block;width:' + Math.max(3, Math.min(100, d)) + '%"></span></span>' + d;
+        }
+        function renderKeywords(p) {
+          var body = document.getElementById("kwBody");
+          var filterSel = document.getElementById("kwClusterFilter");
+          var currentCluster = filterSel.value;
+          filterSel.innerHTML = '<option value="">Tất cả cụm chủ đề</option>' + clustersOf(p).map(function (c) {
+            return '<option value="' + esc(c) + '"' + (c === currentCluster ? " selected" : "") + ">" + esc(c) + "</option>";
+          }).join("");
+          if (p.keywords.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Chưa có từ khoá nào</h3><p>Thêm từ khoá đầu tiên cho dự án này — nhớ gán cụm chủ đề và URL đích cho từng từ khoá.</p><button class="btn primary" type="button" data-add-kw>+ Thêm từ khoá</button></div>';
+            return;
+          }
+          var q = document.getElementById("kwSearch").value.trim().toLowerCase();
+          var intent = document.getElementById("kwIntentFilter").value;
+          var rows = p.keywords.filter(function (k) {
+            if (currentCluster && k.cluster !== currentCluster) return false;
+            if (intent && k.intent !== intent) return false;
+            if (q && (k.keyword + " " + (k.targetUrl || "") + " " + (k.cluster || "")).toLowerCase().indexOf(q) === -1) return false;
+            return true;
+          });
+          if (rows.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Không có từ khoá khớp bộ lọc</h3><p>Thử xoá bớt điều kiện tìm kiếm hoặc lọc.</p></div>';
+            return;
+          }
+          rows.sort(function (a, b) {
+            var pa = a.position == null ? 999 : a.position, pb = b.position == null ? 999 : b.position;
+            return pa - pb;
+          });
+          var html = '<div class="table-wrap"><table><thead><tr><th>Từ khoá</th><th>Cụm chủ đề</th><th>Ý định</th><th class="num">Volume</th><th class="num">Độ khó</th><th class="num">Vị trí</th><th></th></tr></thead><tbody>';
+          rows.forEach(function (k) {
+            var url = safeUrl(k.targetUrl);
+            html += "<tr>" +
+              '<td data-label="Từ khoá"><div><span class="cell-main">' + esc(k.keyword) + "</span>" +
+              (url ? '<div class="cell-sub"><a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(shortUrl(k.targetUrl)) + "</a></div>" : "") +
+              "</div></td>" +
+              '<td data-label="Cụm chủ đề">' + (k.cluster ? '<span class="chip gray">' + esc(k.cluster) + "</span>" : "—") + "</td>" +
+              '<td data-label="Ý định">' + esc(k.intent || "—") + "</td>" +
+              '<td class="num" data-label="Volume">' + fmtNum(k.volume) + "</td>" +
+              '<td class="num" data-label="Độ khó">' + diffHtml(k.difficulty) + "</td>" +
+              '<td class="num" data-label="Vị trí">' + posBadge(k.position) + "</td>" +
+              '<td data-label=""><div class="row-actions"><button class="btn small ghost" type="button" data-edit-kw="' + k.id + '">Sửa</button></div></td>' +
+              "</tr>";
+          });
+          html += "</tbody></table></div>";
+          body.innerHTML = html;
+        }
+
+        /* ---------------- Articles ---------------- */
+        var ART_STATUSES = ["Ý tưởng", "Đang viết", "Chờ duyệt", "Đã xuất bản"];
+        function artStatusChip(s) {
+          var cls = s === "Đã xuất bản" ? "green" : s === "Chờ duyệt" ? "amber" : s === "Đang viết" ? "blue" : "gray";
+          return '<span class="chip ' + cls + '">' + esc(s) + "</span>";
+        }
+        function openArtModal(p, a) {
+          var kwOpts = [{ value: "", label: "— Chưa gắn từ khoá —" }].concat(p.keywords.map(function (k) {
+            return { value: k.id, label: k.keyword };
+          }));
+          openModal(
+            a ? "Sửa bài viết" : "Thêm bài viết",
+            "Bài viết đi theo quy trình: Ý tưởng → Đang viết → Chờ duyệt → Đã xuất bản.",
+            [
+              { name: "title", label: "Tiêu đề bài viết", required: true, full: true, value: a ? a.title : "" },
+              { name: "keywordId", label: "Từ khoá mục tiêu", type: "select", options: kwOpts, value: a ? a.keywordId : "" },
+              { name: "status", label: "Trạng thái", type: "select", options: ART_STATUSES, value: a ? a.status : "Ý tưởng" },
+              { name: "author", label: "Người viết", value: a ? a.author : "" },
+              { name: "wordCount", label: "Số từ", type: "number", min: 0, value: a ? a.wordCount : "" },
+              { name: "publishedDate", label: "Ngày xuất bản", type: "date", value: a ? a.publishedDate : "" },
+              { name: "url", label: "URL bài viết", full: true, value: a ? a.url : "", placeholder: "https://…" },
+              { name: "outline", label: "Ghi chú outline / dàn ý", type: "textarea", full: true, value: a ? a.outline : "", placeholder: "Dàn ý chính, góc tiếp cận, điểm khác biệt so với đối thủ…" }
+            ],
+            function (data) {
+              var rec = {
+                title: data.title.trim(),
+                keywordId: data.keywordId || "",
+                status: data.status,
+                author: (data.author || "").trim(),
+                wordCount: data.wordCount === "" ? null : Number(data.wordCount),
+                publishedDate: data.publishedDate || "",
+                url: (data.url || "").trim(),
+                outline: (data.outline || "").trim()
+              };
+              if (a) { Object.assign(a, rec); toast("Đã cập nhật bài viết"); }
+              else { rec.id = uid(); p.articles.push(rec); toast("Đã thêm bài viết"); }
+              save(); render();
+            },
+            a ? function () {
+              askConfirm("Xoá bài viết?", "“" + a.title + "” sẽ bị xoá khỏi dự án.", function () {
+                p.articles = p.articles.filter(function (x) { return x.id !== a.id; });
+                save(); render(); toast("Đã xoá bài viết");
+              });
+            } : null
+          );
+        }
+        function kwNameById(p, id) {
+          for (var i = 0; i < p.keywords.length; i++) if (p.keywords[i].id === id) return p.keywords[i].keyword;
+          return "";
+        }
+        function fmtDate(d) {
+          if (!d) return "—";
+          var parts = d.split("-");
+          if (parts.length !== 3) return d;
+          return parts[2] + "/" + parts[1] + "/" + parts[0];
+        }
+        function renderArticles(p) {
+          var body = document.getElementById("artBody");
+          if (p.articles.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Chưa có bài viết nào</h3><p>Thêm bài viết và gắn với từ khoá mục tiêu để theo dõi quy trình sản xuất nội dung.</p><button class="btn primary" type="button" data-add-art>+ Thêm bài viết</button></div>';
+            return;
+          }
+          var q = document.getElementById("artSearch").value.trim().toLowerCase();
+          var st = document.getElementById("artStatusFilter").value;
+          var rows = p.articles.filter(function (a) {
+            if (st && a.status !== st) return false;
+            if (q && (a.title + " " + (a.author || "")).toLowerCase().indexOf(q) === -1) return false;
+            return true;
+          });
+          if (rows.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Không có bài viết khớp bộ lọc</h3><p>Thử xoá bớt điều kiện tìm kiếm hoặc lọc.</p></div>';
+            return;
+          }
+          var html = '<div class="table-wrap"><table><thead><tr><th>Bài viết</th><th>Từ khoá mục tiêu</th><th>Trạng thái</th><th>Người viết</th><th class="num">Số từ</th><th>Ngày XB</th><th></th></tr></thead><tbody>';
+          rows.forEach(function (a) {
+            var url = safeUrl(a.url);
+            var kwName = a.keywordId ? kwNameById(p, a.keywordId) : "";
+            html += "<tr>" +
+              '<td data-label="Bài viết"><div><span class="cell-main">' + esc(a.title) + "</span>" +
+              (url ? '<div class="cell-sub"><a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(shortUrl(a.url)) + "</a></div>" : "") +
+              (a.outline ? '<div class="cell-sub">Có ghi chú outline</div>' : "") +
+              "</div></td>" +
+              '<td data-label="Từ khoá mục tiêu">' + (kwName ? esc(kwName) : "—") + "</td>" +
+              '<td data-label="Trạng thái">' + artStatusChip(a.status) + "</td>" +
+              '<td data-label="Người viết">' + esc(a.author || "—") + "</td>" +
+              '<td class="num" data-label="Số từ">' + fmtNum(a.wordCount) + "</td>" +
+              '<td data-label="Ngày XB">' + fmtDate(a.publishedDate) + "</td>" +
+              '<td data-label=""><div class="row-actions"><button class="btn small ghost" type="button" data-edit-art="' + a.id + '">Sửa</button></div></td>' +
+              "</tr>";
+          });
+          html += "</tbody></table></div>";
+          body.innerHTML = html;
+        }
+
+        /* ---------------- Backlinks ---------------- */
+        var BL_STATUSES = ["Đang sống", "Chờ kiểm tra", "Đã mất"];
+        function blStatusChip(s) {
+          var cls = s === "Đang sống" ? "green" : s === "Đã mất" ? "red" : "amber";
+          return '<span class="chip ' + cls + '">' + esc(s) + "</span>";
+        }
+        function openBlModal(p, b) {
+          openModal(
+            b ? "Sửa backlink" : "Thêm backlink",
+            "Theo dõi nguồn đặt link, anchor text và trạng thái index của từng backlink.",
+            [
+              { name: "sourceUrl", label: "URL nguồn (trang đặt link)", required: true, full: true, value: b ? b.sourceUrl : "", placeholder: "https://…" },
+              { name: "targetUrl", label: "URL đích (trang được trỏ về)", required: true, full: true, value: b ? b.targetUrl : "", placeholder: "https://…" },
+              { name: "anchor", label: "Anchor text", value: b ? b.anchor : "" },
+              { name: "rel", label: "Thuộc tính link", type: "select", options: ["Dofollow", "Nofollow"], value: b ? b.rel : "Dofollow" },
+              { name: "status", label: "Trạng thái", type: "select", options: BL_STATUSES, value: b ? b.status : "Đang sống" },
+              { name: "indexed", label: "Đã được Google index?", type: "select", options: [{ value: "unknown", label: "Chưa kiểm tra" }, { value: "yes", label: "Đã index" }, { value: "no", label: "Chưa index" }], value: b ? b.indexed : "unknown" },
+              { name: "cost", label: "Chi phí (VNĐ)", type: "number", min: 0, value: b ? b.cost : "" },
+              { name: "date", label: "Ngày đặt link", type: "date", value: b ? b.date : "" }
+            ],
+            function (data) {
+              var rec = {
+                sourceUrl: data.sourceUrl.trim(),
+                targetUrl: data.targetUrl.trim(),
+                anchor: (data.anchor || "").trim(),
+                rel: data.rel,
+                status: data.status,
+                indexed: data.indexed,
+                cost: data.cost === "" ? null : Number(data.cost),
+                date: data.date || ""
+              };
+              if (b) { Object.assign(b, rec); toast("Đã cập nhật backlink"); }
+              else { rec.id = uid(); p.backlinks.push(rec); toast("Đã thêm backlink"); }
+              save(); render();
+            },
+            b ? function () {
+              askConfirm("Xoá backlink?", "Backlink từ " + shortUrl(b.sourceUrl) + " sẽ bị xoá khỏi dự án.", function () {
+                p.backlinks = p.backlinks.filter(function (x) { return x.id !== b.id; });
+                save(); render(); toast("Đã xoá backlink");
+              });
+            } : null
+          );
+        }
+        function indexedChip(v) {
+          if (v === "yes") return '<span class="chip green">Đã index</span>';
+          if (v === "no") return '<span class="chip red">Chưa index</span>';
+          return '<span class="chip gray">Chưa kiểm tra</span>';
+        }
+        function renderBacklinks(p) {
+          var body = document.getElementById("blBody");
+          if (p.backlinks.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Chưa có backlink nào</h3><p>Thêm backlink để theo dõi anchor text, trạng thái sống/mất, index và tổng chi phí link building.</p><button class="btn primary" type="button" data-add-bl>+ Thêm backlink</button></div>';
+            return;
+          }
+          var q = document.getElementById("blSearch").value.trim().toLowerCase();
+          var st = document.getElementById("blStatusFilter").value;
+          var rows = p.backlinks.filter(function (b) {
+            if (st && b.status !== st) return false;
+            if (q && (b.sourceUrl + " " + b.targetUrl + " " + (b.anchor || "")).toLowerCase().indexOf(q) === -1) return false;
+            return true;
+          });
+          var totalCost = p.backlinks.reduce(function (s, b) { return s + (Number(b.cost) || 0); }, 0);
+          if (rows.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Không có backlink khớp bộ lọc</h3><p>Thử xoá bớt điều kiện tìm kiếm hoặc lọc.</p></div>';
+            return;
+          }
+          var html = '<div class="table-wrap"><table><thead><tr><th>URL nguồn</th><th>Anchor / Đích</th><th>Loại</th><th>Trạng thái</th><th>Index</th><th class="num">Chi phí</th><th></th></tr></thead><tbody>';
+          rows.forEach(function (b) {
+            var src = safeUrl(b.sourceUrl), tgt = safeUrl(b.targetUrl);
+            html += "<tr>" +
+              '<td data-label="URL nguồn"><div>' +
+              (src ? '<a href="' + esc(src) + '" target="_blank" rel="noopener">' + esc(shortUrl(b.sourceUrl)) + "</a>" : esc(shortUrl(b.sourceUrl))) +
+              '<div class="cell-sub">' + fmtDate(b.date) + "</div></div></td>" +
+              '<td data-label="Anchor / Đích"><div><span class="cell-main">' + esc(b.anchor || "—") + "</span>" +
+              '<div class="cell-sub">→ ' + (tgt ? '<a href="' + esc(tgt) + '" target="_blank" rel="noopener">' + esc(shortUrl(b.targetUrl)) + "</a>" : esc(shortUrl(b.targetUrl))) + "</div></div></td>" +
+              '<td data-label="Loại">' + (b.rel === "Nofollow" ? '<span class="chip amber">Nofollow</span>' : '<span class="chip blue">Dofollow</span>') + "</td>" +
+              '<td data-label="Trạng thái">' + blStatusChip(b.status) + "</td>" +
+              '<td data-label="Index">' + indexedChip(b.indexed) + "</td>" +
+              '<td class="num" data-label="Chi phí">' + fmtMoney(b.cost) + "</td>" +
+              '<td data-label=""><div class="row-actions"><button class="btn small ghost" type="button" data-edit-bl="' + b.id + '">Sửa</button></div></td>' +
+              "</tr>";
+          });
+          html += "</tbody></table></div>";
+          if (totalCost > 0) {
+            html += '<p style="color:var(--muted);font-size:13.5px;margin-top:10px">Tổng chi phí backlink của dự án: <strong style="color:var(--ink)">' + fmtMoney(totalCost) + "</strong></p>";
+          }
+          body.innerHTML = html;
+        }
+
+        /* ---------------- Dashboard ---------------- */
+        function renderDashboard(p) {
+          var kws = p.keywords, arts = p.articles, bls = p.backlinks;
+          var top3 = kws.filter(function (k) { return k.position != null && k.position <= 3; }).length;
+          var top10 = kws.filter(function (k) { return k.position != null && k.position <= 10; }).length;
+          var published = arts.filter(function (a) { return a.status === "Đã xuất bản"; }).length;
+          var live = bls.filter(function (b) { return b.status === "Đang sống"; }).length;
+          var lost = bls.filter(function (b) { return b.status === "Đã mất"; }).length;
+          var totalCost = bls.reduce(function (s, b) { return s + (Number(b.cost) || 0); }, 0);
+          var totalVolume = kws.reduce(function (s, k) { return s + (Number(k.volume) || 0); }, 0);
+
+          var stats = [
+            { num: kws.length, lbl: "Từ khoá đang theo dõi", sub: "Tổng volume: " + fmtNum(totalVolume) + "/tháng" },
+            { num: top3, lbl: "Từ khoá top 3", sub: kws.length ? Math.round(top3 / kws.length * 100) + "% tổng số từ khoá" : "—" },
+            { num: top10, lbl: "Từ khoá top 10", sub: kws.length ? Math.round(top10 / kws.length * 100) + "% tổng số từ khoá" : "—" },
+            { num: published + "/" + arts.length, lbl: "Bài đã xuất bản / tổng bài", sub: arts.filter(function (a) { return a.status === "Chờ duyệt"; }).length + " bài đang chờ duyệt" },
+            { num: live, lbl: "Backlink đang sống", sub: lost + " link đã mất" },
+            { num: fmtMoney(totalCost) === "—" ? "0₫" : fmtMoney(totalCost), lbl: "Tổng chi phí backlink", sub: bls.length + " backlink đã ghi nhận" }
+          ];
+          document.getElementById("statGrid").innerHTML = stats.map(function (s) {
+            return '<div class="stat"><div class="num">' + esc(s.num) + '</div><div class="lbl">' + esc(s.lbl) + '</div><div class="sub">' + esc(s.sub) + "</div></div>";
+          }).join("");
+
+          var buckets = [
+            { label: "Top 1–3", cls: "", n: kws.filter(function (k) { return k.position != null && k.position <= 3; }).length },
+            { label: "Top 4–10", cls: "", n: kws.filter(function (k) { return k.position != null && k.position >= 4 && k.position <= 10; }).length },
+            { label: "Top 11–20", cls: "mid", n: kws.filter(function (k) { return k.position != null && k.position >= 11 && k.position <= 20; }).length },
+            { label: "Top 21–50", cls: "low", n: kws.filter(function (k) { return k.position != null && k.position >= 21 && k.position <= 50; }).length },
+            { label: "Top 51–100", cls: "low", n: kws.filter(function (k) { return k.position != null && k.position >= 51 && k.position <= 100; }).length },
+            { label: "Chưa vào top 100", cls: "none", n: kws.filter(function (k) { return k.position == null; }).length }
+          ];
+          var max = Math.max.apply(null, buckets.map(function (b) { return b.n; }).concat([1]));
+          document.getElementById("rankChart").innerHTML =
+            (kws.length === 0 ? '<p class="empty-note">Chưa có dữ liệu từ khoá. Thêm từ khoá ở tab Từ khoá để xem phân bố thứ hạng.</p>' :
+            buckets.map(function (b) {
+              return '<div class="bar-row"><span>' + b.label + '</span><div class="bar-track"><div class="bar-fill ' + b.cls + '" style="width:' + Math.round(b.n / max * 100) + '%"></div></div><span class="bar-num">' + b.n + "</span></div>";
+            }).join(""));
+
+          var items = [];
+          bls.filter(function (b) { return b.status === "Đã mất"; }).forEach(function (b) {
+            items.push({ cls: "red", text: "Backlink đã mất từ " + shortUrl(b.sourceUrl) + (b.anchor ? " (anchor: " + b.anchor + ")" : "") });
+          });
+          bls.filter(function (b) { return b.status === "Đang sống" && b.indexed === "no"; }).forEach(function (b) {
+            items.push({ cls: "amber", text: "Backlink từ " + shortUrl(b.sourceUrl) + " đang sống nhưng chưa được Google index" });
+          });
+          arts.filter(function (a) { return a.status === "Chờ duyệt"; }).forEach(function (a) {
+            items.push({ cls: "amber", text: "Bài “" + a.title + "” đang chờ duyệt" });
+          });
+          kws.filter(function (k) { return k.position == null && k.volume; })
+            .sort(function (a, b) { return (b.volume || 0) - (a.volume || 0); })
+            .slice(0, 5).forEach(function (k) {
+              items.push({ cls: "blue", text: "Từ khoá “" + k.keyword + "” (volume " + fmtNum(k.volume) + ") chưa vào top 100" });
+            });
+          kws.filter(function (k) { return !k.targetUrl; }).slice(0, 3).forEach(function (k) {
+            items.push({ cls: "blue", text: "Từ khoá “" + k.keyword + "” chưa có URL đích" });
+          });
+          document.getElementById("attentionList").innerHTML = items.length
+            ? items.slice(0, 10).map(function (i) { return '<li><span class="dot ' + i.cls + '"></span><span>' + esc(i.text) + "</span></li>"; }).join("")
+            : '<li><span class="dot" style="background:var(--accent)"></span><span>Không có mục nào cần chú ý lúc này.</span></li>';
+        }
+
+        /* ---------------- Tabs & render ---------------- */
+        var currentView = "dashboard";
+        document.getElementById("tabs").addEventListener("click", function (e) {
+          var btn = e.target.closest(".tab");
+          if (!btn) return;
+          currentView = btn.getAttribute("data-view");
+          render();
+        });
+        function render() {
+          var list = document.getElementById("projectList");
+          list.innerHTML = state.projects.map(function (p) {
+            return '<button class="project-item' + (activeProject() && p.id === activeProject().id ? " active" : "") + '" type="button" data-project="' + p.id + '">' +
+              '<span class="pname">' + esc(p.name) + '</span><span class="pdomain">' + esc(p.domain || "Chưa có domain") + "</span></button>";
+          }).join("");
+
+          var p = activeProject();
+          var has = !!p;
+          document.getElementById("noProject").style.display = has ? "none" : "";
+          document.getElementById("tabs").style.display = has ? "" : "none";
+          document.getElementById("projectActions").style.display = has ? "" : "none";
+          document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("active"); });
+          if (!has) {
+            document.getElementById("projectTitle").textContent = "Chưa có dự án";
+            document.getElementById("projectDomain").textContent = "";
+            return;
+          }
+          ensureCollections(p);
+          document.getElementById("projectTitle").textContent = p.name;
+          document.getElementById("projectDomain").textContent = p.domain || "";
+          document.getElementById("countKw").textContent = p.keywords.length;
+          document.getElementById("countArt").textContent = p.articles.length;
+          document.getElementById("countBl").textContent = p.backlinks.length;
+          document.querySelectorAll(".tab").forEach(function (t) {
+            t.classList.toggle("active", t.getAttribute("data-view") === currentView);
+          });
+          document.getElementById("view-" + currentView).classList.add("active");
+          if (currentView === "dashboard") renderDashboard(p);
+          if (currentView === "keywords") renderKeywords(p);
+          if (currentView === "articles") renderArticles(p);
+          if (currentView === "backlinks") renderBacklinks(p);
+        }
+        document.getElementById("projectList").addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-project]");
+          if (!btn) return;
+          state.activeId = btn.getAttribute("data-project");
+          save(); render();
+        });
+
+        /* Add / edit buttons (delegated, incl. empty-state buttons) */
+        document.getElementById("addKwBtn").addEventListener("click", function () { var p = activeProject(); if (p) openKwModal(p, null); });
+        document.getElementById("addArtBtn").addEventListener("click", function () { var p = activeProject(); if (p) openArtModal(p, null); });
+        document.getElementById("addBlBtn").addEventListener("click", function () { var p = activeProject(); if (p) openBlModal(p, null); });
+        document.addEventListener("click", function (e) {
+          var p = activeProject();
+          if (!p) return;
+          if (e.target.closest("[data-add-kw]")) openKwModal(p, null);
+          if (e.target.closest("[data-add-art]")) openArtModal(p, null);
+          if (e.target.closest("[data-add-bl]")) openBlModal(p, null);
+          var ek = e.target.closest("[data-edit-kw]");
+          if (ek) { var k = p.keywords.find(function (x) { return x.id === ek.getAttribute("data-edit-kw"); }); if (k) openKwModal(p, k); }
+          var ea = e.target.closest("[data-edit-art]");
+          if (ea) { var a = p.articles.find(function (x) { return x.id === ea.getAttribute("data-edit-art"); }); if (a) openArtModal(p, a); }
+          var eb = e.target.closest("[data-edit-bl]");
+          if (eb) { var b = p.backlinks.find(function (x) { return x.id === eb.getAttribute("data-edit-bl"); }); if (b) openBlModal(p, b); }
+        });
+
+        /* Delete-project button: direct confirm */
+        document.getElementById("deleteProjectBtn").addEventListener("click", function () {
+          var p = activeProject();
+          if (!p) return;
+          askConfirm("Xoá dự án?", "Toàn bộ từ khoá, bài viết và backlink trong dự án “" + p.name + "” sẽ bị xoá và không khôi phục được nếu chưa xuất JSON sao lưu.", function () {
+            state.projects = state.projects.filter(function (x) { return x.id !== p.id; });
+            if (state.activeId === p.id) state.activeId = state.projects.length ? state.projects[0].id : null;
+            save(); render(); toast("Đã xoá dự án");
+          });
+        }, true);
+
+        /* Filters re-render */
+        ["kwSearch", "kwClusterFilter", "kwIntentFilter", "artSearch", "artStatusFilter", "blSearch", "blStatusFilter"].forEach(function (id) {
+          var el = document.getElementById(id);
+          el.addEventListener("input", render);
+          el.addEventListener("change", render);
+        });
+
+        /* ---------------- Export / Import ---------------- */
+        document.getElementById("exportBtn").addEventListener("click", function () {
+          var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          var d = new Date();
+          a.href = url;
+          a.download = "seo-manager-backup-" + d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + ".json";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 500);
+          toast("Đã xuất file sao lưu JSON");
+        });
+        var importFile = document.getElementById("importFile");
+        document.getElementById("importBtn").addEventListener("click", function () { importFile.click(); });
+        importFile.addEventListener("change", function () {
+          var file = importFile.files && importFile.files[0];
+          if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function () {
+            try {
+              var parsed = JSON.parse(String(reader.result));
+              if (!parsed || !Array.isArray(parsed.projects)) throw new Error("bad format");
+              parsed.projects.forEach(ensureCollections);
+              askConfirm("Nhập dữ liệu?", "Dữ liệu hiện tại trong trình duyệt sẽ bị thay bằng nội dung của file vừa chọn.", function () {
+                state = parsed;
+                state.activeId = state.projects.length ? state.projects[0].id : null;
+                save(); render(); toast("Đã nhập dữ liệu từ file");
+              });
+            } catch (err) {
+              toast("File không đúng định dạng sao lưu của ứng dụng");
+            }
+            importFile.value = "";
+          };
+          reader.readAsText(file);
+        });
+
+        load();
+        if (state.projects.length && !state.activeId) state.activeId = state.projects[0].id;
+        render();
+      })();
+    </script>
+  </body>
+</html>
