@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@import "tailwindcss-safe-area";
+
+@theme {
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 28px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 30px;
+  --text-3xl--line-height: 36px;
+  --text-4xl: 36px;
+  --text-4xl--line-height: 40px;
+  --text-5xl: 48px;
+  --text-5xl--line-height: 52px;
+}
+
+:root {
+  color-scheme: light dark;
+  --bg: #faf8f3;
+  --surface: #ffffff;
+  --surface-alt: #f1ede3;
+  --text: #1c2420;
+  --dim: #5f6a63;
+  --border: #ddd6c6;
+  --accent: #166534;
+  --accent-strong: #14532d;
+  --accent-soft: #e3efe4;
+  --amber: #d97706;
+  --amber-soft: #fdf0dc;
+  --danger: #b91c1c;
+  --danger-soft: #fbe7e7;
+  --radius: 10px;
+  --space-surface: var(--surface);
+  --space-surface-alt: var(--surface-alt);
+  --space-muted: var(--dim);
+  --space-border: var(--border);
+  --space-accent: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12160f;
+    --surface: #1d231a;
+    --surface-alt: #262e21;
+    --text: #eef2ea;
+    --dim: #a3ada0;
+    --border: #39412f;
+    --accent: #4ade80;
+    --accent-strong: #86efac;
+    --accent-soft: #22351f;
+    --amber: #fbbf24;
+    --amber-soft: #3a2c10;
+    --danger: #f87171;
+    --danger-soft: #3d1d1d;
+  }
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
