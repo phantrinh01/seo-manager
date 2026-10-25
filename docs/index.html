@@ -433,6 +433,14 @@
         .editor-title-input { font-size: 19px; }
       }
 
+      /* ---------- Search Console ---------- */
+      .gsc-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+      .gsc-status-line { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+      .gsc-note { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.55; }
+      .gsc-steps { font-size: 13.5px; color: var(--ink-2); line-height: 1.65; margin: 0 0 6px; padding-left: 20px; }
+      .gsc-steps li { margin-bottom: 4px; }
+      .gsc-range { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+
       /* ---------- Responsive ---------- */
       @media (max-width: 900px) {
         .app { grid-template-columns: 1fr; }
@@ -520,6 +528,7 @@
           <button class="tab" data-view="keywords" type="button">Từ khoá <span class="count" id="countKw">0</span></button>
           <button class="tab" data-view="articles" type="button">Bài viết <span class="count" id="countArt">0</span></button>
           <button class="tab" data-view="backlinks" type="button">Backlink <span class="count" id="countBl">0</span></button>
+          <button class="tab" data-view="gsc" type="button">Search Console</button>
         </nav>
 
         <section id="noProject" class="empty-state">
@@ -589,6 +598,11 @@
             <button class="btn primary" id="addBlBtn" type="button">+ Thêm backlink</button>
           </div>
           <div id="blBody"></div>
+        </section>
+
+        <!-- Google Search Console -->
+        <section class="view" id="view-gsc">
+          <div id="gscBody"></div>
         </section>
       </main>
     </div>
@@ -702,6 +716,31 @@
       </div>
     </div>
 
+    <!-- Google Search Console settings -->
+    <div class="overlay" id="gscOverlay">
+      <div class="modal" role="dialog" aria-modal="true">
+        <h2>Cài đặt Google Search Console</h2>
+        <p class="modal-sub">App đọc dữ liệu thứ hạng trực tiếp từ Search Console bằng chính tài khoản Google của bạn (quyền chỉ-đọc). Google yêu cầu mỗi ứng dụng web có một OAuth Client ID — bạn tạo một lần, miễn phí, trong Google Cloud Console:</p>
+        <ol class="gsc-steps">
+          <li>Vào <strong>Google Cloud Console</strong> → tạo hoặc chọn một project → mục <strong>APIs &amp; Services → Library</strong>, tìm và bật <strong>Google Search Console API</strong>.</li>
+          <li>Vào <strong>APIs &amp; Services → Credentials → Create Credentials → OAuth client ID</strong>, chọn loại <strong>Web application</strong>.</li>
+          <li>Ở mục <strong>Authorized JavaScript origins</strong>, thêm đúng tên miền nơi bạn mở app này — ví dụ <span class="mono">https://phantrinh01.github.io</span> (nếu mở app trong Muse thì thêm origin của trang Muse bạn đang dùng).</li>
+          <li>Bấm Create, sao chép <strong>Client ID</strong> (dạng <span class="mono">….apps.googleusercontent.com</span>) và dán vào ô dưới đây.</li>
+        </ol>
+        <form id="gscForm">
+          <div class="form-grid">
+            <div class="field full"><label>OAuth Client ID</label><input id="gscCfgClientId" type="text" autocomplete="off" spellcheck="false" placeholder="….apps.googleusercontent.com" /></div>
+          </div>
+          <p class="modal-sub" style="margin-top:14px">Client ID chỉ lưu trong trình duyệt này. Token truy cập Google chỉ giữ trong phiên làm việc (hết hạn sau khoảng 1 giờ) và không được lưu lại; app chỉ lưu property bạn đã chọn cùng bảng số liệu lần tải gần nhất để xem lại khi chưa kết nối.</p>
+          <div class="modal-actions">
+            <span class="spacer"></span>
+            <button class="btn" id="gscClose" type="button">Đóng</button>
+            <button class="btn primary" type="submit">Lưu Client ID</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Two-choice dialog (used by Firebase first-sync) -->
     <div class="overlay" id="choiceOverlay">
       <div class="modal" style="max-width:440px">
@@ -777,6 +816,8 @@
           if (!Array.isArray(p.keywords)) p.keywords = [];
           if (!Array.isArray(p.articles)) p.articles = [];
           if (!Array.isArray(p.backlinks)) p.backlinks = [];
+          if (!p.gsc || typeof p.gsc !== "object") p.gsc = { property: "", lastSync: "", range: 28, rangeStart: "", rangeEnd: "", rows: [] };
+          if (!Array.isArray(p.gsc.rows)) p.gsc.rows = [];
           return p;
         }
 
@@ -1515,6 +1556,7 @@
           if (currentView === "keywords") renderKeywords(p);
           if (currentView === "articles") renderArticles(p);
           if (currentView === "backlinks") renderBacklinks(p);
+          if (currentView === "gsc") renderGsc(p);
         }
         document.getElementById("projectList").addEventListener("click", function (e) {
           var btn = e.target.closest("[data-project]");
@@ -1597,6 +1639,306 @@
             importFile.value = "";
           };
           reader.readAsText(file);
+        });
+
+        /* ---------------- Google Search Console ---------------- */
+        var GSC_CONFIG_KEY = "seo-manager-gsc-config-v1";
+        var gsc = { token: null, expiresAt: 0, clientId: "", sites: null, busy: false };
+        var gscOverlay = document.getElementById("gscOverlay");
+
+        function gscLoadConfig() {
+          try {
+            var raw = localStorage.getItem(GSC_CONFIG_KEY);
+            if (raw) { var cfg = JSON.parse(raw); if (cfg && cfg.clientId) gsc.clientId = cfg.clientId; }
+          } catch (e) {}
+        }
+        function gscConnected() { return !!gsc.token && Date.now() < gsc.expiresAt; }
+        function gscDomainOf(property) {
+          if (!property) return "";
+          if (property.indexOf("sc-domain:") === 0) return property.slice(10).toLowerCase();
+          var u = safeUrl(property);
+          if (u) { try { return new URL(u).hostname.replace(/^www\./i, "").toLowerCase(); } catch (e) {} }
+          return String(property).toLowerCase();
+        }
+        function gscPropertyLabel(property) {
+          if (property.indexOf("sc-domain:") === 0) return property.slice(10) + " (Domain property)";
+          return shortUrl(property);
+        }
+        function gscLoadGis(cb) {
+          if (window.google && google.accounts && google.accounts.oauth2) { cb(); return; }
+          var s = document.createElement("script");
+          s.src = "https://accounts.google.com/gsi/client";
+          s.onload = cb;
+          s.onerror = function () { toast("Không tải được thư viện Google — kiểm tra mạng rồi thử lại"); };
+          document.head.appendChild(s);
+        }
+        function gscApi(url, body, cb) {
+          var opts = {
+            method: body ? "POST" : "GET",
+            headers: { "Authorization": "Bearer " + gsc.token, "Content-Type": "application/json" }
+          };
+          if (body) opts.body = JSON.stringify(body);
+          fetch(url, opts).then(function (r) {
+            if (r.status === 401) {
+              gsc.token = null; gsc.busy = false;
+              toast("Phiên đăng nhập Google đã hết hạn — bấm “Kết nối Search Console” lại");
+              render();
+              throw new Error("gsc-401");
+            }
+            return r.json();
+          }).then(function (data) {
+            if (data && data.error) {
+              gsc.busy = false;
+              toast("Lỗi Search Console: " + (data.error.message || data.error.status || "không rõ"));
+              render();
+              return;
+            }
+            cb(data);
+          }).catch(function (e) {
+            if (String(e && e.message) === "gsc-401") return;
+            gsc.busy = false;
+            toast("Không gọi được API Search Console — kiểm tra mạng và quyền truy cập property");
+            render();
+          });
+        }
+        function gscConnect() {
+          var p = activeProject(); if (!p) return;
+          if (!gsc.clientId) {
+            openGscSettings();
+            toast("Hãy nhập OAuth Client ID trước — xem hướng dẫn trong cửa sổ Cài đặt");
+            return;
+          }
+          gscLoadGis(function () {
+            try {
+              var client = google.accounts.oauth2.initTokenClient({
+                client_id: gsc.clientId,
+                scope: "https://www.googleapis.com/auth/webmasters.readonly",
+                callback: function (resp) {
+                  if (resp && resp.access_token) {
+                    gsc.token = resp.access_token;
+                    gsc.expiresAt = Date.now() + Number(resp.expires_in || 3600) * 1000;
+                    gscFetchSites();
+                  } else {
+                    toast("Không lấy được quyền truy cập Search Console");
+                  }
+                },
+                error_callback: function (err) {
+                  toast("Đăng nhập Google bị lỗi" + (err && err.type ? ": " + err.type : "") + " — kiểm tra Client ID và Authorized JavaScript origins");
+                }
+              });
+              client.requestAccessToken({ prompt: gscConnected() ? "" : "consent" });
+            } catch (e) {
+              toast("Không khởi tạo được đăng nhập Google: " + e.message);
+            }
+          });
+        }
+        function gscFetchSites() {
+          gsc.busy = true; render();
+          gscApi("https://www.googleapis.com/webmasters/v3/sites", null, function (data) {
+            gsc.busy = false;
+            gsc.sites = (data.siteEntry || []).filter(function (s) { return s.permissionLevel !== "siteUnverifiedUser"; });
+            var p = activeProject();
+            if (p) {
+              var g = p.gsc;
+              if (!g.property && gsc.sites.length) {
+                var want = String(p.domain || "").replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/.*$/, "").toLowerCase();
+                var match = null;
+                gsc.sites.forEach(function (s) { if (gscDomainOf(s.siteUrl) === want) match = s.siteUrl; });
+                g.property = match || gsc.sites[0].siteUrl;
+                save();
+              }
+            }
+            render();
+            if (!gsc.sites.length) toast("Tài khoản Google này chưa có property Search Console nào đã xác minh");
+            else toast("Đã kết nối Search Console — chọn property rồi bấm “Tải dữ liệu thứ hạng”");
+          });
+        }
+        function gscFetchData() {
+          var p = activeProject(); if (!p) return;
+          var g = p.gsc;
+          if (!gscConnected()) { toast("Hãy kết nối Search Console trước"); return; }
+          if (!g.property) { toast("Hãy chọn property (website) trong Search Console trước"); return; }
+          var range = Number(g.range || 28);
+          var end = new Date(); end.setDate(end.getDate() - 3);
+          var start = new Date(end); start.setDate(start.getDate() - (range - 1));
+          function iso(d) { return d.toISOString().slice(0, 10); }
+          gsc.busy = true; render();
+          var url = "https://www.googleapis.com/webmasters/v3/sites/" + encodeURIComponent(g.property) + "/searchAnalytics/query";
+          gscApi(url, { startDate: iso(start), endDate: iso(end), dimensions: ["query"], rowLimit: 250, dataState: "final" }, function (data) {
+            gsc.busy = false;
+            g.rows = (data.rows || []).map(function (r) {
+              return { query: r.keys[0], clicks: r.clicks || 0, impressions: r.impressions || 0, ctr: r.ctr || 0, position: r.position || 0 };
+            });
+            g.lastSync = new Date().toISOString();
+            g.rangeStart = iso(start); g.rangeEnd = iso(end);
+            save(); render();
+            toast("Đã tải " + g.rows.length + " truy vấn từ Search Console");
+          });
+        }
+        function gscSyncPositions() {
+          var p = activeProject(); if (!p) return;
+          var g = p.gsc;
+          if (!g.rows.length) { toast("Chưa có dữ liệu Search Console để đồng bộ"); return; }
+          var matched = 0, updated = 0;
+          g.rows.forEach(function (r) {
+            var q = String(r.query || "").trim().toLowerCase();
+            if (!q) return;
+            var kw = null;
+            for (var i = 0; i < p.keywords.length; i++) {
+              if (String(p.keywords[i].keyword).trim().toLowerCase() === q) { kw = p.keywords[i]; break; }
+            }
+            if (!kw) return;
+            matched++;
+            var pos = Math.round(r.position);
+            if (pos >= 1 && pos <= 100 && kw.position !== pos) { kw.position = pos; updated++; }
+          });
+          if (updated) save();
+          render();
+          if (!matched) toast("Không có truy vấn nào trùng khớp với từ khoá đang theo dõi");
+          else toast("Đã khớp " + matched + " từ khoá, cập nhật vị trí cho " + updated + " từ khoá");
+        }
+        function gscFmtDateTime(isoStr) {
+          if (!isoStr) return "";
+          var d = new Date(isoStr);
+          if (isNaN(d.getTime())) return "";
+          return d.toLocaleString("vi-VN");
+        }
+        function renderGsc(p) {
+          var body = document.getElementById("gscBody");
+          var g = p.gsc;
+          var connected = gscConnected();
+          var html = '<div class="panel" style="margin-bottom:14px"><h2>Kết nối Google Search Console</h2>';
+          if (!gsc.clientId) {
+            html += '<div class="gsc-status-line"><span class="fb-dot"></span><span>Chưa cấu hình OAuth Client ID</span></div>' +
+              '<p class="gsc-note">Để hiển thị thứ hạng thật từ Google, app cần một OAuth Client ID do bạn tạo trong Google Cloud Console (miễn phí, làm một lần) — bấm “Cài đặt Search Console” để xem hướng dẫn từng bước. Sau khi có Client ID, bạn đăng nhập bằng tài khoản Google đang quản lý Search Console của domain.</p>';
+          } else if (connected) {
+            html += '<div class="gsc-status-line"><span class="fb-dot on"></span><span>Đã kết nối Search Console' + (gsc.sites ? " · " + gsc.sites.length + " property" : "") + '</span></div>' +
+              '<p class="gsc-note">Token truy cập hết hạn sau khoảng 1 giờ; khi hết hạn chỉ cần bấm “Kết nối lại”. App dùng quyền chỉ-đọc (webmasters.readonly), không sửa gì trong Search Console của bạn.</p>';
+          } else {
+            html += '<div class="gsc-status-line"><span class="fb-dot"></span><span>Chưa kết nối (đã có Client ID)</span></div>' +
+              '<p class="gsc-note">Bấm “Kết nối Search Console” và đăng nhập bằng tài khoản Google đang quản lý property của domain này.</p>';
+          }
+          html += '<div class="gsc-controls">' +
+            (connected
+              ? '<button class="btn" type="button" id="gscReconnectBtn">Kết nối lại</button>'
+              : '<button class="btn primary" type="button" id="gscConnectBtn">Kết nối Search Console</button>') +
+            '<button class="btn" type="button" id="gscSettingsBtn">Cài đặt Search Console</button>';
+          if (connected && gsc.sites && gsc.sites.length) {
+            html += '<select class="gsc-range" id="gscPropertySel" title="Property Search Console">' +
+              gsc.sites.map(function (s) {
+                return '<option value="' + esc(s.siteUrl) + '"' + (s.siteUrl === g.property ? " selected" : "") + ">" + esc(gscPropertyLabel(s.siteUrl)) + "</option>";
+              }).join("") + "</select>";
+          } else if (g.property) {
+            html += '<span class="chip gray">Property đã chọn: ' + esc(gscPropertyLabel(g.property)) + "</span>";
+          }
+          if (connected) {
+            html += '<select class="gsc-range" id="gscRangeSel" title="Khoảng thời gian">' +
+              [7, 28, 90].map(function (n) {
+                return '<option value="' + n + '"' + (Number(g.range || 28) === n ? " selected" : "") + ">" + n + " ngày gần nhất</option>";
+              }).join("") + "</select>" +
+              '<button class="btn primary" type="button" id="gscFetchBtn"' + (gsc.busy ? " disabled" : "") + ">" + (gsc.busy ? "Đang tải…" : "Tải dữ liệu thứ hạng") + "</button>";
+          }
+          if (g.rows.length) {
+            html += '<button class="btn" type="button" id="gscSyncBtn">Đồng bộ vị trí vào Từ khoá</button>';
+          }
+          html += "</div>";
+          if (g.lastSync) {
+            html += '<p class="gsc-note">Dữ liệu gần nhất tải lúc ' + esc(gscFmtDateTime(g.lastSync)) +
+              (g.rangeStart ? " · khoảng " + esc(fmtDate(g.rangeStart)) + " – " + esc(fmtDate(g.rangeEnd)) + " (Search Console thường trễ khoảng 3 ngày)" : "") +
+              (g.property ? " · property: " + esc(gscPropertyLabel(g.property)) : "") + ". Bảng dưới đây là số liệu đã lưu; kết nối lại và tải dữ liệu để cập nhật.</p>";
+          }
+          html += "</div>";
+
+          if (!g.rows.length) {
+            html += '<div class="empty-state"><h3>Chưa có dữ liệu thứ hạng từ Search Console</h3><p>' +
+              (connected
+                ? "Chọn đúng property của domain rồi bấm “Tải dữ liệu thứ hạng” để lấy các truy vấn đang mang traffic về website, kèm vị trí trung bình trên Google."
+                : "Kết nối Search Console của domain để xem truy vấn nào đang hiển thị trên Google, ở vị trí bao nhiêu, được bao nhiêu click — và đồng bộ vị trí thật vào danh sách từ khoá đang theo dõi.") +
+              "</p></div>";
+            body.innerHTML = html;
+            gscBindControls(p);
+            return;
+          }
+
+          var totalClicks = 0, totalImpr = 0, weightedPos = 0;
+          g.rows.forEach(function (r) { totalClicks += r.clicks; totalImpr += r.impressions; weightedPos += r.position * r.impressions; });
+          var avgPos = totalImpr ? weightedPos / totalImpr : 0;
+          var avgCtr = totalImpr ? totalClicks / totalImpr * 100 : 0;
+          var stats = [
+            { num: fmtNum(totalClicks), lbl: "Tổng click từ Google", sub: "Trong khoảng đã tải" },
+            { num: fmtNum(totalImpr), lbl: "Tổng lượt hiển thị", sub: g.rows.length + " truy vấn" },
+            { num: avgCtr.toFixed(2).replace(".", ",") + "%", lbl: "CTR trung bình", sub: "Click / hiển thị" },
+            { num: avgPos ? avgPos.toFixed(1).replace(".", ",") : "—", lbl: "Vị trí trung bình", sub: "Có trọng số theo hiển thị" }
+          ];
+          html += '<div class="stat-grid">' + stats.map(function (s) {
+            return '<div class="stat"><div class="num">' + esc(s.num) + '</div><div class="lbl">' + esc(s.lbl) + '</div><div class="sub">' + esc(s.sub) + "</div></div>";
+          }).join("") + "</div>";
+
+          var kwByQuery = {};
+          p.keywords.forEach(function (k) { kwByQuery[String(k.keyword).trim().toLowerCase()] = k; });
+          var rows = g.rows.slice().sort(function (a, b) { return b.impressions - a.impressions; });
+          html += '<div class="table-wrap"><table><thead><tr><th>Truy vấn trên Google</th><th class="num">Vị trí TB</th><th class="num">Click</th><th class="num">Hiển thị</th><th class="num">CTR</th><th>Trạng thái theo dõi</th></tr></thead><tbody>';
+          rows.forEach(function (r) {
+            var kw = kwByQuery[String(r.query || "").trim().toLowerCase()];
+            html += "<tr>" +
+              '<td data-label="Truy vấn"><span class="cell-main">' + esc(r.query) + "</span></td>" +
+              '<td class="num" data-label="Vị trí TB">' + posBadge(Math.round(r.position)) + "</td>" +
+              '<td class="num" data-label="Click">' + fmtNum(r.clicks) + "</td>" +
+              '<td class="num" data-label="Hiển thị">' + fmtNum(r.impressions) + "</td>" +
+              '<td class="num" data-label="CTR">' + (r.ctr * 100).toFixed(2).replace(".", ",") + "%</td>" +
+              '<td data-label="Theo dõi">' + (kw
+                ? '<span class="chip green">Đang theo dõi</span> <span class="cell-sub">vị trí đang ghi: ' + (kw.position == null ? "chưa vào top 100" : kw.position) + "</span>"
+                : '<span class="chip gray">Chưa theo dõi</span>') + "</td>" +
+              "</tr>";
+          });
+          html += "</tbody></table></div>";
+          html += '<p class="gsc-note">Vị trí là vị trí trung bình của truy vấn trong khoảng ngày đã chọn. Bấm “Đồng bộ vị trí vào Từ khoá” để ghi vị trí làm tròn của các truy vấn trùng khớp vào cột Vị trí ở tab Từ khoá.</p>';
+          body.innerHTML = html;
+          gscBindControls(p);
+        }
+        function gscBindControls(p) {
+          var connectBtn = document.getElementById("gscConnectBtn");
+          if (connectBtn) connectBtn.addEventListener("click", gscConnect);
+          var reconnectBtn = document.getElementById("gscReconnectBtn");
+          if (reconnectBtn) reconnectBtn.addEventListener("click", gscConnect);
+          var settingsBtn = document.getElementById("gscSettingsBtn");
+          if (settingsBtn) settingsBtn.addEventListener("click", openGscSettings);
+          var fetchBtn = document.getElementById("gscFetchBtn");
+          if (fetchBtn) fetchBtn.addEventListener("click", gscFetchData);
+          var syncBtn = document.getElementById("gscSyncBtn");
+          if (syncBtn) syncBtn.addEventListener("click", gscSyncPositions);
+          var propSel = document.getElementById("gscPropertySel");
+          if (propSel) propSel.addEventListener("change", function () {
+            p.gsc.property = this.value;
+            save(); render();
+          });
+          var rangeSel = document.getElementById("gscRangeSel");
+          if (rangeSel) rangeSel.addEventListener("change", function () {
+            p.gsc.range = Number(this.value);
+            save();
+          });
+        }
+        function openGscSettings() {
+          document.getElementById("gscCfgClientId").value = gsc.clientId || "";
+          gscOverlay.classList.add("open");
+        }
+        document.getElementById("gscClose").addEventListener("click", function () { gscOverlay.classList.remove("open"); });
+        gscOverlay.addEventListener("click", function (e) { if (e.target === gscOverlay) gscOverlay.classList.remove("open"); });
+        document.getElementById("gscForm").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var id = document.getElementById("gscCfgClientId").value.trim();
+          if (id && id.indexOf(".apps.googleusercontent.com") === -1) {
+            toast("Client ID chưa đúng định dạng (phải kết thúc bằng .apps.googleusercontent.com)");
+            return;
+          }
+          gsc.clientId = id;
+          try { localStorage.setItem(GSC_CONFIG_KEY, JSON.stringify({ clientId: id })); } catch (err) {}
+          gscOverlay.classList.remove("open");
+          render();
+          toast(id ? "Đã lưu Client ID — giờ bấm “Kết nối Search Console”" : "Đã xoá Client ID");
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") gscOverlay.classList.remove("open");
         });
 
         /* ---------------- Firebase: Auth + Firestore sync ---------------- */
@@ -1908,6 +2250,7 @@
         });
 
         load();
+        gscLoadConfig();
         if (state.projects.length && !state.activeId) state.activeId = state.projects[0].id;
         render();
         fbRender();
