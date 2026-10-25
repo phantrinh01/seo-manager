@@ -448,6 +448,24 @@
         border-radius: 20px; padding: 2px 10px;
       }
       .report-head .band-sub { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.55; }
+      .gsc-qtext {
+        display: block; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+        max-width: 520px; max-height: 2.9em; overflow: hidden; text-overflow: ellipsis;
+        overflow-wrap: anywhere; word-break: break-word; line-height: 1.45;
+      }
+      td.gsc-qcell { max-width: 520px; overflow: hidden; }
+      .gsc-ptext {
+        display: block; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+        max-width: 460px; max-height: 2.9em; overflow: hidden; text-overflow: ellipsis;
+        overflow-wrap: anywhere; word-break: break-word; line-height: 1.45;
+      }
+      .gsc-overview-wrap { margin-top: 22px; }
+      .gsc-overview-wrap .table-wrap { margin-bottom: 6px; }
+      @media (max-width: 720px) {
+        .gsc-qtext { max-width: 100%; }
+        .gsc-ptext { max-width: 100%; }
+        td.gsc-qcell { max-width: none; }
+      }
 
       /* ---------- Responsive ---------- */
       @media (max-width: 900px) {
@@ -558,6 +576,7 @@
               <ul class="attention-list" id="attentionList"></ul>
             </div>
           </div>
+          <div class="gsc-overview-wrap" id="gscOverview"></div>
         </section>
 
         <!-- Keywords -->
@@ -797,6 +816,15 @@
         function shortUrl(u) {
           if (!u) return "—";
           return String(u).replace(/^https?:\/\//i, "").replace(/\/$/, "");
+        }
+        /* Chỉ rút ngắn CHUỖI HIỂN THỊ của truy vấn/URL quá dài trong bảng
+           (toàn văn vẫn giữ trong title để di chuột xem đầy đủ, và dữ liệu
+           gốc vẫn được tính đủ trong mọi thống kê/báo cáo). */
+        function truncateDisplay(s, max) {
+          var t = String(s == null ? "" : s);
+          var lim = max || 180;
+          if (t.length <= lim) return t;
+          return t.slice(0, lim).trimEnd() + "…";
         }
 
         /* ---------------- State ---------------- */
@@ -1523,6 +1551,16 @@
           document.getElementById("attentionList").innerHTML = items.length
             ? items.slice(0, 10).map(function (i) { return '<li><span class="dot ' + i.cls + '"></span><span>' + esc(i.text) + "</span></li>"; }).join("")
             : '<li><span class="dot" style="background:var(--accent)"></span><span>Không có mục nào cần chú ý lúc này.</span></li>';
+
+          /* Dữ liệu Search Console hiển thị tại Báo cáo tổng quan (tab Tổng quan) */
+          var gscOv = document.getElementById("gscOverview");
+          if (gscOv) {
+            gscOv.innerHTML = (typeof buildGscReportsHtml === "function")
+              ? buildGscReportsHtml(p)
+              : "";
+            var goBtn = document.getElementById("gscGoConnectBtn");
+            if (goBtn) goBtn.addEventListener("click", function () { currentView = "gsc"; render(); });
+          }
         }
 
         /* ---------------- Tabs & render ---------------- */
@@ -1860,7 +1898,7 @@
           if (g.lastSync) {
             html += '<p class="gsc-note">Dữ liệu gần nhất tải lúc ' + esc(gscFmtDateTime(g.lastSync)) +
               (g.rangeStart ? " · khoảng " + esc(fmtDate(g.rangeStart)) + " – " + esc(fmtDate(g.rangeEnd)) + " (Search Console thường trễ khoảng 3 ngày)" : "") +
-              (g.property ? " · property: " + esc(gscPropertyLabel(g.property)) : "") + ". Bảng dưới đây là số liệu đã lưu; kết nối lại và tải dữ liệu để cập nhật.</p>";
+              (g.property ? " · property: " + esc(gscPropertyLabel(g.property)) : "") + ". Số liệu đã lưu hiển thị ở tab Tổng quan; kết nối lại và tải dữ liệu để cập nhật.</p>";
           }
           html += "</div>";
 
@@ -1875,13 +1913,40 @@
             return;
           }
 
+          html += '<div class="panel"><h2>Dữ liệu đã chuyển sang Báo cáo tổng quan</h2>' +
+            '<p class="gsc-note">Toàn bộ số liệu Search Console — thống kê tổng, báo cáo từ khoá Top 1–5 / Top 6–10, báo cáo theo trang và bảng tất cả truy vấn — giờ hiển thị ở tab Tổng quan. Tab này chỉ dùng để kết nối, chọn property, tải dữ liệu và đồng bộ vị trí.</p>' +
+            '<div class="gsc-controls"><button class="btn primary" type="button" id="gscGoOverviewBtn">Xem báo cáo tổng quan</button></div></div>';
+          body.innerHTML = html;
+          gscBindControls(p);
+          var goOv = document.getElementById("gscGoOverviewBtn");
+          if (goOv) goOv.addEventListener("click", function () { currentView = "dashboard"; render(); });
+        }
+
+        /* Báo cáo Search Console — hiển thị tại tab Tổng quan (Báo cáo tổng quan).
+           Tab Search Console chỉ còn phần kết nối / tải dữ liệu / đồng bộ. */
+        function buildGscReportsHtml(p) {
+          var g = p.gsc;
+          if (!g.rows.length) {
+            return '<div class="panel"><h2>Báo cáo Search Console</h2>' +
+              '<p class="empty-note">Chưa có dữ liệu Search Console. Sang tab Search Console, kết nối domain và bấm “Tải dữ liệu thứ hạng” — số liệu sẽ hiển thị tại đây, trong Báo cáo tổng quan.</p>' +
+              '<div class="gsc-controls"><button class="btn" type="button" id="gscGoConnectBtn">Sang tab Search Console</button></div></div>';
+          }
+          var html = '<div class="report-head"><h2>Báo cáo Search Console</h2>' +
+            '<p class="band-sub">Số liệu thứ hạng thật từ Google Search Console của dự án' +
+            (g.property ? ' · property: ' + esc(gscPropertyLabel(g.property)) : '') +
+            (g.lastSync ? ' · tải lúc ' + esc(gscFmtDateTime(g.lastSync)) : '') +
+            (g.rangeStart ? ' · khoảng ' + esc(fmtDate(g.rangeStart)) + ' – ' + esc(fmtDate(g.rangeEnd)) : '') + '.</p></div>';
+          /* Mọi truy vấn đều được tính đủ trong thống kê và báo cáo;
+             chỉ phần hiển thị của truy vấn quá dài trong bảng mới bị rút ngắn
+             (truncateDisplay + CSS line-clamp, toàn văn nằm trong title khi di chuột). */
+          var reportRows = g.rows;
           var totalClicks = 0, totalImpr = 0, weightedPos = 0;
-          g.rows.forEach(function (r) { totalClicks += r.clicks; totalImpr += r.impressions; weightedPos += r.position * r.impressions; });
+          reportRows.forEach(function (r) { totalClicks += r.clicks; totalImpr += r.impressions; weightedPos += r.position * r.impressions; });
           var avgPos = totalImpr ? weightedPos / totalImpr : 0;
           var avgCtr = totalImpr ? totalClicks / totalImpr * 100 : 0;
           var stats = [
             { num: fmtNum(totalClicks), lbl: "Tổng click từ Google", sub: "Trong khoảng đã tải" },
-            { num: fmtNum(totalImpr), lbl: "Tổng lượt hiển thị", sub: g.rows.length + " truy vấn" },
+            { num: fmtNum(totalImpr), lbl: "Tổng lượt hiển thị", sub: reportRows.length + " truy vấn" },
             { num: avgCtr.toFixed(2).replace(".", ",") + "%", lbl: "CTR trung bình", sub: "Click / hiển thị" },
             { num: avgPos ? avgPos.toFixed(1).replace(".", ",") : "—", lbl: "Vị trí trung bình", sub: "Có trọng số theo hiển thị" }
           ];
@@ -1900,7 +1965,7 @@
           function gscRowHtml(r, tracked) {
             var kw = kwByQuery[String(r.query || "").trim().toLowerCase()];
             return "<tr>" +
-              '<td data-label="Từ khoá"><span class="cell-main">' + esc(r.query) + "</span></td>" +
+              '<td class="gsc-qcell" data-label="Từ khoá"><span class="cell-main gsc-qtext" title="' + esc(r.query) + '">' + esc(truncateDisplay(r.query, 180)) + "</span></td>" +
               '<td class="num" data-label="Vị trí TB">' + posBadge(Math.round(r.position)) + ' <span class="cell-sub">' + Number(r.position).toFixed(1).replace(".", ",") + "</span></td>" +
               '<td class="num" data-label="Click">' + fmtNum(r.clicks) + "</td>" +
               '<td class="num" data-label="Hiển thị">' + fmtNum(r.impressions) + "</td>" +
@@ -1911,7 +1976,7 @@
           function gscTableHead(tracked) {
             return '<div class="table-wrap"><table><thead><tr><th>Từ khoá</th><th class="num">Vị trí TB</th><th class="num">Click</th><th class="num">Hiển thị</th><th class="num">CTR</th>' + (tracked ? "<th>Trạng thái theo dõi</th>" : "") + "</tr></thead><tbody>";
           }
-          var sortedByImpr = g.rows.slice().sort(function (a, b) { return b.impressions - a.impressions; });
+          var sortedByImpr = reportRows.slice().sort(function (a, b) { return b.impressions - a.impressions; });
           html += '<div class="report-head"><h2>Báo cáo từ khoá theo nhóm thứ hạng</h2>' +
             '<p class="band-sub">Chia theo vị trí trung bình của từng truy vấn trong khoảng ngày đã tải. Các nhóm không chồng lấn nhau: Top 1–5 là vị trí ≤ 5, Top 6–10 là trên 5 đến 10.</p></div>';
           BANDS.forEach(function (band) {
@@ -1951,7 +2016,7 @@
               var art = artByUrl[normPageUrl(r.page)];
               return "<tr>" +
                 '<td data-label="Trang"><div>' +
-                (pageUrl ? '<a class="cell-main" href="' + esc(pageUrl) + '" target="_blank" rel="noopener">' + esc(shortUrl(r.page)) + "</a>" : '<span class="cell-main">' + esc(shortUrl(r.page)) + "</span>") +
+                (pageUrl ? '<a class="cell-main gsc-ptext" href="' + esc(pageUrl) + '" target="_blank" rel="noopener" title="' + esc(r.page) + '">' + esc(truncateDisplay(shortUrl(r.page), 120)) + "</a>" : '<span class="cell-main gsc-ptext" title="' + esc(r.page) + '">' + esc(truncateDisplay(shortUrl(r.page), 120)) + "</span>") +
                 "</div></td>" +
                 '<td class="num" data-label="Vị trí TB">' + posBadge(Math.round(r.position)) + ' <span class="cell-sub">' + Number(r.position).toFixed(1).replace(".", ",") + "</span></td>" +
                 '<td class="num" data-label="Click">' + fmtNum(r.clicks) + "</td>" +
@@ -1980,12 +2045,12 @@
           }
 
           html += '<div class="report-head"><h2>Tất cả truy vấn</h2><p class="band-sub">Toàn bộ truy vấn đã tải, sắp xếp theo lượt hiển thị giảm dần.</p></div>';
-          var rows = g.rows.slice().sort(function (a, b) { return b.impressions - a.impressions; });
+          var rows = reportRows.slice().sort(function (a, b) { return b.impressions - a.impressions; });
           html += '<div class="table-wrap"><table><thead><tr><th>Truy vấn trên Google</th><th class="num">Vị trí TB</th><th class="num">Click</th><th class="num">Hiển thị</th><th class="num">CTR</th><th>Trạng thái theo dõi</th></tr></thead><tbody>';
           rows.forEach(function (r) {
             var kw = kwByQuery[String(r.query || "").trim().toLowerCase()];
             html += "<tr>" +
-              '<td data-label="Truy vấn"><span class="cell-main">' + esc(r.query) + "</span></td>" +
+              '<td class="gsc-qcell" data-label="Truy vấn"><span class="cell-main gsc-qtext" title="' + esc(r.query) + '">' + esc(truncateDisplay(r.query, 180)) + "</span></td>" +
               '<td class="num" data-label="Vị trí TB">' + posBadge(Math.round(r.position)) + "</td>" +
               '<td class="num" data-label="Click">' + fmtNum(r.clicks) + "</td>" +
               '<td class="num" data-label="Hiển thị">' + fmtNum(r.impressions) + "</td>" +
@@ -1997,8 +2062,7 @@
           });
           html += "</tbody></table></div>";
           html += '<p class="gsc-note">Vị trí là vị trí trung bình của truy vấn trong khoảng ngày đã chọn. Bấm “Đồng bộ vị trí vào Từ khoá” để ghi vị trí làm tròn của các truy vấn trùng khớp vào cột Vị trí ở tab Từ khoá.</p>';
-          body.innerHTML = html;
-          gscBindControls(p);
+          return html;
         }
         function gscBindControls(p) {
           var connectBtn = document.getElementById("gscConnectBtn");
