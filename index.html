@@ -333,6 +333,97 @@
       .fb-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
       .fb-rules { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px; min-height: 148px !important; white-space: pre; }
 
+      /* ---------- Article title → editor ---------- */
+      .title-open {
+        background: none; border: none; padding: 0; margin: 0;
+        font: inherit; font-weight: 600; color: inherit; text-align: left;
+        cursor: pointer;
+      }
+      .title-open:hover { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+
+      /* ---------- Rich-text editor ---------- */
+      .editor-overlay { padding: 18px 12px; }
+      .editor-modal {
+        max-width: 920px; padding: 0; overflow: hidden;
+        display: flex; flex-direction: column;
+        max-height: calc(100vh - 36px);
+      }
+      .editor-head { padding: 18px 22px 10px; }
+      .editor-title-input {
+        width: 100%; border: none; background: transparent;
+        font-size: 22px; font-weight: 800; letter-spacing: -0.01em;
+        padding: 2px 0; color: var(--ink);
+      }
+      .editor-title-input:focus { outline: none; border-bottom: 2px solid var(--accent); }
+      .editor-meta { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+      .editor-toolbar {
+        display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+        padding: 8px 14px;
+        border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+        background: var(--surface-2);
+      }
+      .tb-btn {
+        border: 1px solid transparent; background: transparent;
+        border-radius: 8px; min-width: 34px; height: 32px; padding: 0 8px;
+        font-size: 14px; font-weight: 600; color: var(--ink-2);
+        display: inline-flex; align-items: center; justify-content: center;
+      }
+      .tb-btn:hover { background: var(--surface); border-color: var(--line); color: var(--ink); }
+      .tb-sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; flex: none; }
+      .tb-select {
+        border: 1px solid var(--line); background: var(--surface);
+        border-radius: 8px; height: 32px; padding: 0 8px; font-size: 13.5px; font-weight: 600;
+      }
+      .editor-linkbar {
+        display: none; gap: 8px; align-items: center; flex-wrap: wrap;
+        padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--surface);
+      }
+      .editor-linkbar.open { display: flex; }
+      .editor-linkbar input {
+        flex: 1; min-width: 200px;
+        border: 1px solid var(--line); background: var(--bg);
+        border-radius: 8px; padding: 7px 10px; font-size: 14px;
+      }
+      .editor-page { overflow-y: auto; padding: 18px; background: var(--surface-2); }
+      .editor-area {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        min-height: 46vh;
+        padding: 30px 36px;
+        font-size: 16px; line-height: 1.75; color: var(--ink);
+        outline: none;
+      }
+      .editor-area:empty::before {
+        content: attr(data-placeholder);
+        color: var(--muted); pointer-events: none;
+      }
+      .editor-area h2 { font-size: 23px; font-weight: 800; line-height: 1.35; margin: 26px 0 10px; }
+      .editor-area h2:first-child { margin-top: 0; }
+      .editor-area h3 { font-size: 18.5px; font-weight: 700; line-height: 1.4; margin: 20px 0 8px; }
+      .editor-area p { margin: 0 0 12px; }
+      .editor-area ul, .editor-area ol { margin: 0 0 12px; padding-left: 24px; }
+      .editor-area li { margin-bottom: 4px; }
+      .editor-area blockquote {
+        margin: 0 0 12px; padding: 10px 16px;
+        background: var(--surface-2); border-radius: 8px; color: var(--ink-2);
+      }
+      .editor-area a { color: var(--accent-strong); text-decoration: underline; }
+      .editor-foot {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        padding: 12px 16px; border-top: 1px solid var(--line);
+      }
+      .editor-count { font-size: 13px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+      .editor-dirty { font-size: 13px; color: var(--amber); font-weight: 600; display: none; }
+      .editor-dirty.show { display: inline; }
+      .editor-foot .spacer { flex: 1; }
+      @media (max-width: 720px) {
+        .editor-page { padding: 10px; }
+        .editor-area { padding: 20px 16px; min-height: 52vh; }
+        .editor-title-input { font-size: 19px; }
+      }
+
       /* ---------- Responsive ---------- */
       @media (max-width: 900px) {
         .app { grid-template-columns: 1fr; }
@@ -546,6 +637,59 @@
             <button class="btn primary" type="submit">Lưu &amp; kết nối</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Rich-text editor (mở khi bấm vào tiêu đề bài viết) -->
+    <div class="overlay editor-overlay" id="editorOverlay">
+      <div class="modal editor-modal" role="dialog" aria-modal="true" aria-label="Trình soạn thảo bài viết">
+        <div class="editor-head">
+          <input class="editor-title-input" id="editorTitle" type="text" placeholder="Tiêu đề bài viết" autocomplete="off" />
+          <div class="editor-meta" id="editorMeta"></div>
+        </div>
+        <div class="editor-toolbar" id="editorToolbar">
+          <select class="tb-select" id="editorBlock" title="Kiểu đoạn">
+            <option value="P">Đoạn văn</option>
+            <option value="H2">Tiêu đề 2</option>
+            <option value="H3">Tiêu đề 3</option>
+            <option value="BLOCKQUOTE">Trích dẫn</option>
+          </select>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" type="button" data-cmd="bold" title="In đậm (Ctrl+B)"><strong>B</strong></button>
+          <button class="tb-btn" type="button" data-cmd="italic" title="In nghiêng (Ctrl+I)"><em>I</em></button>
+          <button class="tb-btn" type="button" data-cmd="underline" title="Gạch chân (Ctrl+U)"><u>U</u></button>
+          <button class="tb-btn" type="button" data-cmd="strikeThrough" title="Gạch ngang"><s>S</s></button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" type="button" data-cmd="insertUnorderedList" title="Danh sách chấm">• ☰</button>
+          <button class="tb-btn" type="button" data-cmd="insertOrderedList" title="Danh sách số">1. ☰</button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" type="button" data-cmd="justifyLeft" title="Căn trái">Trái</button>
+          <button class="tb-btn" type="button" data-cmd="justifyCenter" title="Căn giữa">Giữa</button>
+          <button class="tb-btn" type="button" data-cmd="justifyRight" title="Căn phải">Phải</button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" type="button" id="editorLinkBtn" title="Chèn / sửa liên kết">Liên kết</button>
+          <button class="tb-btn" type="button" data-cmd="unlink" title="Bỏ liên kết">Bỏ link</button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" type="button" data-cmd="removeFormat" title="Xoá định dạng">Xoá ĐD</button>
+          <button class="tb-btn" type="button" data-cmd="undo" title="Hoàn tác (Ctrl+Z)">Hoàn tác</button>
+          <button class="tb-btn" type="button" data-cmd="redo" title="Làm lại">Làm lại</button>
+        </div>
+        <div class="editor-linkbar" id="editorLinkBar">
+          <input id="editorLinkUrl" type="url" placeholder="Dán địa chỉ liên kết, ví dụ https://…" />
+          <button class="btn small primary" id="editorLinkApply" type="button">Chèn link</button>
+          <button class="btn small" id="editorLinkCancel" type="button">Huỷ</button>
+        </div>
+        <div class="editor-page">
+          <div class="editor-area" id="editorArea" contenteditable="true" spellcheck="false" data-placeholder="Bắt đầu viết nội dung bài viết tại đây…"></div>
+        </div>
+        <div class="editor-foot">
+          <span class="editor-count" id="editorCount">0 từ</span>
+          <span class="editor-dirty" id="editorDirty">• Chưa lưu</span>
+          <span class="spacer"></span>
+          <button class="btn" id="editorInsertOutline" type="button" style="display:none">Chèn ghi chú outline</button>
+          <button class="btn" id="editorClose" type="button">Đóng</button>
+          <button class="btn primary" id="editorSave" type="button">Lưu bài viết</button>
+        </div>
       </div>
     </div>
 
@@ -935,9 +1079,11 @@
           rows.forEach(function (a) {
             var url = safeUrl(a.url);
             var kwName = a.keywordId ? kwNameById(p, a.keywordId) : "";
+            var hasContent = !!(a.content && String(a.content).replace(/<[^>]*>/g, "").trim());
             html += "<tr>" +
-              '<td data-label="Bài viết"><div><span class="cell-main">' + esc(a.title) + "</span>" +
+              '<td data-label="Bài viết"><div><button class="title-open" type="button" data-open-editor="' + a.id + '" title="Bấm để mở trình soạn thảo và viết nội dung bài này">' + esc(a.title) + "</button>" +
               (url ? '<div class="cell-sub"><a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(shortUrl(a.url)) + "</a></div>" : "") +
+              (hasContent ? '<div class="cell-sub">Đã có nội dung — bấm tiêu đề để soạn tiếp</div>' : "") +
               (a.outline ? '<div class="cell-sub">Có ghi chú outline</div>' : "") +
               "</div></td>" +
               '<td data-label="Từ khoá mục tiêu">' + (kwName ? esc(kwName) : "—") + "</td>" +
@@ -951,6 +1097,177 @@
           html += "</tbody></table></div>";
           body.innerHTML = html;
         }
+
+        /* ---------------- Rich-text editor ---------------- */
+        var editorOverlay = document.getElementById("editorOverlay");
+        var editorTitleEl = document.getElementById("editorTitle");
+        var editorArea = document.getElementById("editorArea");
+        var editorMeta = document.getElementById("editorMeta");
+        var editorCount = document.getElementById("editorCount");
+        var editorDirtyEl = document.getElementById("editorDirty");
+        var editorLinkBar = document.getElementById("editorLinkBar");
+        var editorLinkUrl = document.getElementById("editorLinkUrl");
+        var editorInsertOutlineBtn = document.getElementById("editorInsertOutline");
+        var editingProject = null, editingArticle = null;
+        var editorSnapshot = "";
+        var savedRange = null;
+
+        function editorWordCount() {
+          var text = editorArea.textContent.replace(/\s+/g, " ").trim();
+          return text ? text.split(" ").length : 0;
+        }
+        function editorIsDirty() {
+          if (!editingArticle) return false;
+          return editorTitleEl.value !== editingArticle.title ||
+            editorArea.innerHTML !== editorSnapshot;
+        }
+        function editorRefreshMeta() {
+          editorCount.textContent = editorWordCount().toLocaleString("vi-VN") + " từ";
+          editorDirtyEl.classList.toggle("show", editorIsDirty());
+        }
+        function rememberSelection() {
+          var sel = window.getSelection();
+          if (sel && sel.rangeCount && editorArea.contains(sel.anchorNode)) {
+            savedRange = sel.getRangeAt(0).cloneRange();
+          }
+        }
+        function restoreSelection() {
+          editorArea.focus();
+          if (!savedRange) return;
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(savedRange);
+        }
+        function openEditor(p, a) {
+          editingProject = p;
+          editingArticle = a;
+          editorTitleEl.value = a.title || "";
+          editorArea.innerHTML = a.content || "";
+          editorSnapshot = editorArea.innerHTML;
+          var kwName = a.keywordId ? kwNameById(p, a.keywordId) : "";
+          var bits = [];
+          if (kwName) bits.push("Từ khoá mục tiêu: " + kwName);
+          bits.push("Trạng thái: " + (a.status || "Ý tưởng"));
+          editorMeta.textContent = bits.join(" · ");
+          editorInsertOutlineBtn.style.display = a.outline ? "" : "none";
+          editorLinkBar.classList.remove("open");
+          document.getElementById("editorBlock").value = "P";
+          editorOverlay.classList.add("open");
+          editorRefreshMeta();
+          setTimeout(function () { editorArea.focus(); }, 50);
+        }
+        function closeEditor() {
+          editorOverlay.classList.remove("open");
+          editingProject = null;
+          editingArticle = null;
+          savedRange = null;
+        }
+        function requestCloseEditor() {
+          if (!editingArticle) { closeEditor(); return; }
+          if (!editorIsDirty()) { closeEditor(); return; }
+          askChoice(
+            "Bài viết chưa được lưu",
+            "Bạn đã sửa nội dung nhưng chưa bấm Lưu. Lưu lại trước khi đóng, hay đóng và bỏ các thay đổi vừa sửa?",
+            "Lưu & đóng", "Đóng không lưu",
+            function () { saveEditorContent(); closeEditor(); },
+            function () { closeEditor(); }
+          );
+        }
+        function saveEditorContent() {
+          if (!editingArticle || !editingProject) return;
+          var title = editorTitleEl.value.trim();
+          if (title) editingArticle.title = title;
+          editingArticle.content = editorArea.innerHTML;
+          var words = editorWordCount();
+          if (words > 0) editingArticle.wordCount = words;
+          editorSnapshot = editorArea.innerHTML;
+          editorRefreshMeta();
+          save(); render();
+          toast("Đã lưu nội dung bài viết");
+        }
+        document.getElementById("editorSave").addEventListener("click", saveEditorContent);
+        document.getElementById("editorClose").addEventListener("click", requestCloseEditor);
+        editorOverlay.addEventListener("click", function (e) { if (e.target === editorOverlay) requestCloseEditor(); });
+        editorArea.addEventListener("input", editorRefreshMeta);
+        editorTitleEl.addEventListener("input", editorRefreshMeta);
+        editorArea.addEventListener("keyup", rememberSelection);
+        editorArea.addEventListener("mouseup", rememberSelection);
+        editorArea.addEventListener("keydown", function (e) {
+          if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+            e.preventDefault();
+            saveEditorContent();
+          }
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && editorOverlay.classList.contains("open") &&
+              !document.getElementById("choiceOverlay").classList.contains("open")) {
+            requestCloseEditor();
+          }
+        });
+
+        /* Toolbar: keep the editor selection when a button is pressed */
+        document.getElementById("editorToolbar").addEventListener("mousedown", function (e) {
+          if (e.target.closest("button")) e.preventDefault();
+        });
+        document.getElementById("editorToolbar").addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-cmd]");
+          if (!btn) return;
+          rememberSelection();
+          restoreSelection();
+          document.execCommand(btn.getAttribute("data-cmd"), false, null);
+          editorRefreshMeta();
+        });
+        document.getElementById("editorBlock").addEventListener("change", function () {
+          var tag = this.value;
+          restoreSelection();
+          document.execCommand("formatBlock", false, tag);
+          this.value = "P";
+          editorRefreshMeta();
+        });
+        document.getElementById("editorLinkBtn").addEventListener("click", function () {
+          rememberSelection();
+          var open = editorLinkBar.classList.toggle("open");
+          if (open) {
+            var selText = savedRange ? savedRange.toString() : "";
+            editorLinkUrl.value = "";
+            editorLinkUrl.placeholder = selText
+              ? "Liên kết cho đoạn “" + selText.slice(0, 40) + "”…"
+              : "Hãy bôi đen đoạn chữ trong bài trước, rồi nhập địa chỉ liên kết…";
+            editorLinkUrl.focus();
+          }
+        });
+        document.getElementById("editorLinkCancel").addEventListener("click", function () {
+          editorLinkBar.classList.remove("open");
+          restoreSelection();
+        });
+        document.getElementById("editorLinkApply").addEventListener("click", function () {
+          var raw = editorLinkUrl.value.trim();
+          if (!raw) { toast("Hãy nhập địa chỉ liên kết"); return; }
+          var url = safeUrl(raw);
+          if (!url) { toast("Địa chỉ liên kết chưa hợp lệ"); return; }
+          restoreSelection();
+          if (!savedRange || savedRange.collapsed) {
+            document.execCommand("insertHTML", false, '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(shortUrl(raw)) + "</a>");
+          } else {
+            document.execCommand("createLink", false, url);
+            editorArea.querySelectorAll('a[href="' + url + '"]').forEach(function (lnk) {
+              lnk.setAttribute("target", "_blank");
+              lnk.setAttribute("rel", "noopener");
+            });
+          }
+          editorLinkBar.classList.remove("open");
+          editorRefreshMeta();
+        });
+        editorInsertOutlineBtn.addEventListener("click", function () {
+          if (!editingArticle || !editingArticle.outline) return;
+          var html = editingArticle.outline.split(/\n+/).map(function (line) {
+            return line.trim() ? "<p>" + esc(line.trim()) + "</p>" : "";
+          }).join("");
+          editorArea.focus();
+          document.execCommand("insertHTML", false, html);
+          editorRefreshMeta();
+          toast("Đã chèn ghi chú outline vào cuối nội dung");
+        });
 
         /* ---------------- Backlinks ---------------- */
         var BL_STATUSES = ["Đang sống", "Chờ kiểm tra", "Đã mất"];
@@ -1164,6 +1481,8 @@
           if (ek) { var k = p.keywords.find(function (x) { return x.id === ek.getAttribute("data-edit-kw"); }); if (k) openKwModal(p, k); }
           var ea = e.target.closest("[data-edit-art]");
           if (ea) { var a = p.articles.find(function (x) { return x.id === ea.getAttribute("data-edit-art"); }); if (a) openArtModal(p, a); }
+          var oe = e.target.closest("[data-open-editor]");
+          if (oe) { var art = p.articles.find(function (x) { return x.id === oe.getAttribute("data-open-editor"); }); if (art) openEditor(p, art); }
           var eb = e.target.closest("[data-edit-bl]");
           if (eb) { var b = p.backlinks.find(function (x) { return x.id === eb.getAttribute("data-edit-bl"); }); if (b) openBlModal(p, b); }
         });
