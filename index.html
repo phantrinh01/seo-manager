@@ -269,6 +269,15 @@
       .diff-fill { height: 100%; background: #d9a441; }
       .diff-fill.hard { background: var(--red); }
       .diff-fill.easy { background: var(--accent); }
+      .bl-anchors { display: flex; flex-direction: column; gap: 5px; }
+      .bl-anchor-row { display: flex; align-items: flex-start; gap: 7px; flex-wrap: wrap; }
+      .bl-anchor-num {
+        font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 700;
+        background: var(--surface-2); color: var(--muted);
+        border-radius: 20px; padding: 1px 7px; flex: none; margin-top: 1px;
+      }
+      .bl-anchor-text { font-weight: 600; }
+      .bl-rel-stack { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
 
       .empty-state {
         background: var(--surface);
@@ -1271,19 +1280,49 @@
 
         /* ---------------- Backlinks ---------------- */
         var BL_STATUSES = ["Đang sống", "Chờ kiểm tra", "Đã mất"];
+        var BL_RELS = ["Dofollow", "Nofollow", "Sponsored", "UGC"];
         function blStatusChip(s) {
           var cls = s === "Đang sống" ? "green" : s === "Đã mất" ? "red" : "amber";
           return '<span class="chip ' + cls + '">' + esc(s) + "</span>";
         }
+        function blRelChip(rel) {
+          var r = rel || "Dofollow";
+          var cls = r === "Nofollow" ? "amber" : r === "Sponsored" ? "red" : r === "UGC" ? "gray" : "blue";
+          return '<span class="chip ' + cls + '">' + esc(r) + "</span>";
+        }
+        function blAnchorList(b) {
+          if (!b) return [];
+          var list = [];
+          var a1 = b.anchor1 || b.anchor || "";
+          var r1 = b.rel1 || b.rel || "Dofollow";
+          if (a1) list.push({ n: 1, text: a1, rel: r1 });
+          if (b.anchor2) list.push({ n: 2, text: b.anchor2, rel: b.rel2 || "Dofollow" });
+          if (b.anchor3) list.push({ n: 3, text: b.anchor3, rel: b.rel3 || "Dofollow" });
+          if (!list.length && r1) list.push({ n: 1, text: "", rel: r1 });
+          return list;
+        }
+        function blAllAnchorText(b) {
+          return blAnchorList(b).map(function (x) { return x.text; }).filter(Boolean).join(" ");
+        }
         function openBlModal(p, b) {
+          var a1 = b ? (b.anchor1 || b.anchor || "") : "";
+          var r1 = b ? (b.rel1 || b.rel || "Dofollow") : "Dofollow";
+          var a2 = b ? (b.anchor2 || "") : "";
+          var r2 = b ? (b.rel2 || "Dofollow") : "Dofollow";
+          var a3 = b ? (b.anchor3 || "") : "";
+          var r3 = b ? (b.rel3 || "Dofollow") : "Dofollow";
           openModal(
             b ? "Sửa backlink" : "Thêm backlink",
-            "Theo dõi nguồn đặt link, anchor text và trạng thái index của từng backlink.",
+            "Một backlink có thể ghi tới 3 anchor text, mỗi anchor có thuộc tính link riêng (Anchor 1 là chính, 2 và 3 là tuỳ chọn).",
             [
               { name: "sourceUrl", label: "URL nguồn (trang đặt link)", required: true, full: true, value: b ? b.sourceUrl : "", placeholder: "https://…" },
               { name: "targetUrl", label: "URL đích (trang được trỏ về)", required: true, full: true, value: b ? b.targetUrl : "", placeholder: "https://…" },
-              { name: "anchor", label: "Anchor text", value: b ? b.anchor : "" },
-              { name: "rel", label: "Thuộc tính link", type: "select", options: ["Dofollow", "Nofollow"], value: b ? b.rel : "Dofollow" },
+              { name: "anchor1", label: "Anchor text 1", value: a1, placeholder: "Anchor chính" },
+              { name: "rel1", label: "Thuộc tính link 1", type: "select", options: BL_RELS, value: r1 },
+              { name: "anchor2", label: "Anchor text 2 (tuỳ chọn)", value: a2, placeholder: "Anchor phụ thứ hai" },
+              { name: "rel2", label: "Thuộc tính link 2", type: "select", options: BL_RELS, value: r2 },
+              { name: "anchor3", label: "Anchor text 3 (tuỳ chọn)", value: a3, placeholder: "Anchor phụ thứ ba" },
+              { name: "rel3", label: "Thuộc tính link 3", type: "select", options: BL_RELS, value: r3 },
               { name: "status", label: "Trạng thái", type: "select", options: BL_STATUSES, value: b ? b.status : "Đang sống" },
               { name: "indexed", label: "Đã được Google index?", type: "select", options: [{ value: "unknown", label: "Chưa kiểm tra" }, { value: "yes", label: "Đã index" }, { value: "no", label: "Chưa index" }], value: b ? b.indexed : "unknown" },
               { name: "cost", label: "Chi phí (VNĐ)", type: "number", min: 0, value: b ? b.cost : "" },
@@ -1293,8 +1332,14 @@
               var rec = {
                 sourceUrl: data.sourceUrl.trim(),
                 targetUrl: data.targetUrl.trim(),
-                anchor: (data.anchor || "").trim(),
-                rel: data.rel,
+                anchor1: (data.anchor1 || "").trim(),
+                anchor: (data.anchor1 || "").trim(),
+                rel1: data.rel1 || "Dofollow",
+                rel: data.rel1 || "Dofollow",
+                anchor2: (data.anchor2 || "").trim(),
+                rel2: data.rel2 || "Dofollow",
+                anchor3: (data.anchor3 || "").trim(),
+                rel3: data.rel3 || "Dofollow",
                 status: data.status,
                 indexed: data.indexed,
                 cost: data.cost === "" ? null : Number(data.cost),
@@ -1327,7 +1372,7 @@
           var st = document.getElementById("blStatusFilter").value;
           var rows = p.backlinks.filter(function (b) {
             if (st && b.status !== st) return false;
-            if (q && (b.sourceUrl + " " + b.targetUrl + " " + (b.anchor || "")).toLowerCase().indexOf(q) === -1) return false;
+            if (q && (b.sourceUrl + " " + b.targetUrl + " " + blAllAnchorText(b) + " " + (b.anchor || "") + " " + (b.anchor2 || "") + " " + (b.anchor3 || "")).toLowerCase().indexOf(q) === -1) return false;
             return true;
           });
           var totalCost = p.backlinks.reduce(function (s, b) { return s + (Number(b.cost) || 0); }, 0);
@@ -1335,16 +1380,27 @@
             body.innerHTML = '<div class="empty-state"><h3>Không có backlink khớp bộ lọc</h3><p>Thử xoá bớt điều kiện tìm kiếm hoặc lọc.</p></div>';
             return;
           }
-          var html = '<div class="table-wrap"><table><thead><tr><th>URL nguồn</th><th>Anchor / Đích</th><th>Loại</th><th>Trạng thái</th><th>Index</th><th class="num">Chi phí</th><th></th></tr></thead><tbody>';
+          var html = '<div class="table-wrap"><table><thead><tr><th>URL nguồn</th><th>Anchor text / Đích</th><th>Thuộc tính link</th><th>Trạng thái</th><th>Index</th><th class="num">Chi phí</th><th></th></tr></thead><tbody>';
           rows.forEach(function (b) {
             var src = safeUrl(b.sourceUrl), tgt = safeUrl(b.targetUrl);
+            var anchors = blAnchorList(b);
+            var anchorsHtml = anchors.length
+              ? '<div class="bl-anchors">' + anchors.map(function (x) {
+                  return '<div class="bl-anchor-row"><span class="bl-anchor-num">' + x.n + '</span><span class="bl-anchor-text">' + esc(x.text || "—") + "</span></div>";
+                }).join("") + "</div>"
+              : '<span class="cell-main">—</span>';
+            var relsHtml = anchors.length
+              ? '<div class="bl-rel-stack">' + anchors.map(function (x) {
+                  return '<span style="display:flex;gap:6px;align-items:center"><span class="bl-anchor-num">' + x.n + "</span>" + blRelChip(x.rel) + "</span>";
+                }).join("") + "</div>"
+              : blRelChip(b.rel1 || b.rel);
             html += "<tr>" +
               '<td data-label="URL nguồn"><div>' +
               (src ? '<a href="' + esc(src) + '" target="_blank" rel="noopener">' + esc(shortUrl(b.sourceUrl)) + "</a>" : esc(shortUrl(b.sourceUrl))) +
               '<div class="cell-sub">' + fmtDate(b.date) + "</div></div></td>" +
-              '<td data-label="Anchor / Đích"><div><span class="cell-main">' + esc(b.anchor || "—") + "</span>" +
-              '<div class="cell-sub">→ ' + (tgt ? '<a href="' + esc(tgt) + '" target="_blank" rel="noopener">' + esc(shortUrl(b.targetUrl)) + "</a>" : esc(shortUrl(b.targetUrl))) + "</div></div></td>" +
-              '<td data-label="Loại">' + (b.rel === "Nofollow" ? '<span class="chip amber">Nofollow</span>' : '<span class="chip blue">Dofollow</span>') + "</td>" +
+              '<td data-label="Anchor / Đích"><div>' + anchorsHtml +
+              '<div class="cell-sub" style="margin-top:6px">→ ' + (tgt ? '<a href="' + esc(tgt) + '" target="_blank" rel="noopener">' + esc(shortUrl(b.targetUrl)) + "</a>" : esc(shortUrl(b.targetUrl))) + "</div></div></td>" +
+              '<td data-label="Thuộc tính link">' + relsHtml + "</td>" +
               '<td data-label="Trạng thái">' + blStatusChip(b.status) + "</td>" +
               '<td data-label="Index">' + indexedChip(b.indexed) + "</td>" +
               '<td class="num" data-label="Chi phí">' + fmtMoney(b.cost) + "</td>" +
@@ -1398,7 +1454,7 @@
 
           var items = [];
           bls.filter(function (b) { return b.status === "Đã mất"; }).forEach(function (b) {
-            items.push({ cls: "red", text: "Backlink đã mất từ " + shortUrl(b.sourceUrl) + (b.anchor ? " (anchor: " + b.anchor + ")" : "") });
+            items.push({ cls: "red", text: "Backlink đã mất từ " + shortUrl(b.sourceUrl) + (blAllAnchorText(b) ? " (anchor: " + blAllAnchorText(b) + ")" : "") });
           });
           bls.filter(function (b) { return b.status === "Đang sống" && b.indexed === "no"; }).forEach(function (b) {
             items.push({ cls: "amber", text: "Backlink từ " + shortUrl(b.sourceUrl) + " đang sống nhưng chưa được Google index" });
