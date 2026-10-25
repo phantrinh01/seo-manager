@@ -1895,9 +1895,7 @@
           /* ---- Báo cáo từ khoá theo nhóm thứ hạng ---- */
           var BANDS = [
             { label: "Top 1–5", sub: "Vị trí trung bình từ 1 đến 5 — nhóm dẫn đầu trang 1, đang mang traffic tốt nhất, cần giữ vững.", test: function (pos) { return pos <= 5; } },
-            { label: "Top 6–10", sub: "Vị trí trung bình trên 5 đến 10 — nửa dưới trang 1, cần cải thiện CTR và nội dung để bứt lên top 5.", test: function (pos) { return pos > 5 && pos <= 10; } },
-            { label: "Top 11–20", sub: "Vị trí trung bình trên 10 đến 20 — trang 2, gần trang 1 nhất; ứng viên hàng đầu để đẩy hạng.", test: function (pos) { return pos > 10 && pos <= 20; } },
-            { label: "Ngoài top 20", sub: "Vị trí trung bình trên 20 — cần xem lại ý định tìm kiếm, nội dung và liên kết nội bộ.", test: function (pos) { return pos > 20; } }
+            { label: "Top 6–10", sub: "Vị trí trung bình trên 5 đến 10 — nửa dưới trang 1, cần cải thiện CTR và nội dung để bứt lên top 5.", test: function (pos) { return pos > 5 && pos <= 10; } }
           ];
           function gscRowHtml(r, tracked) {
             var kw = kwByQuery[String(r.query || "").trim().toLowerCase()];
@@ -1935,9 +1933,7 @@
           /* ---- Báo cáo theo trang / bài viết, chia nhóm thứ hạng ---- */
           var PAGE_BAND_NOTES = {
             "Top 1–5": "Trang đang đứng ở nhóm vị trí dẫn đầu — giữ vững nội dung và liên kết nội bộ trỏ về trang này.",
-            "Top 6–10": "Trang ở nửa dưới trang 1 — bổ sung nội dung chuyên sâu và internal link để tiến lên top 5.",
-            "Top 11–20": "Trang ở trang 2 — ứng viên tốt nhất để đẩy lên trang 1 bằng nội dung và backlink.",
-            "Ngoài top 20": "Trang còn yếu — kiểm tra lại truy vấn đích, mức độ liên quan và liên kết nội bộ."
+            "Top 6–10": "Trang ở nửa dưới trang 1 — bổ sung nội dung chuyên sâu và internal link để tiến lên top 5."
           };
           html += '<div class="report-head"><h2>Báo cáo theo trang (bài viết) theo nhóm thứ hạng</h2>' +
             '<p class="band-sub">Các trang đích đang nhận hiển thị và click từ Google trong cùng khoảng ngày, chia theo vị trí trung bình của trang (cùng cách chia nhóm như báo cáo từ khoá ở trên). Trang nào trùng URL với một bài viết trong tab Bài viết sẽ được gắn nhãn kèm trạng thái của bài.</p></div>';
