@@ -440,6 +440,14 @@
       .gsc-steps { font-size: 13.5px; color: var(--ink-2); line-height: 1.65; margin: 0 0 6px; padding-left: 20px; }
       .gsc-steps li { margin-bottom: 4px; }
       .gsc-range { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+      .report-head { margin: 24px 0 10px; }
+      .report-head h2 { font-size: 16.5px; font-weight: 700; margin: 0 0 4px; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+      .report-head h2 .cnt {
+        font-family: "IBM Plex Mono", monospace; font-size: 12.5px; font-weight: 600;
+        background: var(--accent-soft); color: var(--accent-strong);
+        border-radius: 20px; padding: 2px 10px;
+      }
+      .report-head .band-sub { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.55; }
 
       /* ---------- Responsive ---------- */
       @media (max-width: 900px) {
@@ -816,8 +824,9 @@
           if (!Array.isArray(p.keywords)) p.keywords = [];
           if (!Array.isArray(p.articles)) p.articles = [];
           if (!Array.isArray(p.backlinks)) p.backlinks = [];
-          if (!p.gsc || typeof p.gsc !== "object") p.gsc = { property: "", lastSync: "", range: 28, rangeStart: "", rangeEnd: "", rows: [] };
+          if (!p.gsc || typeof p.gsc !== "object") p.gsc = { property: "", lastSync: "", range: 28, rangeStart: "", rangeEnd: "", rows: [], pages: [] };
           if (!Array.isArray(p.gsc.rows)) p.gsc.rows = [];
+          if (!Array.isArray(p.gsc.pages)) p.gsc.pages = [];
           return p;
         }
 
@@ -1765,14 +1774,20 @@
           gsc.busy = true; render();
           var url = "https://www.googleapis.com/webmasters/v3/sites/" + encodeURIComponent(g.property) + "/searchAnalytics/query";
           gscApi(url, { startDate: iso(start), endDate: iso(end), dimensions: ["query"], rowLimit: 250, dataState: "final" }, function (data) {
-            gsc.busy = false;
             g.rows = (data.rows || []).map(function (r) {
               return { query: r.keys[0], clicks: r.clicks || 0, impressions: r.impressions || 0, ctr: r.ctr || 0, position: r.position || 0 };
             });
             g.lastSync = new Date().toISOString();
             g.rangeStart = iso(start); g.rangeEnd = iso(end);
-            save(); render();
-            toast("Đã tải " + g.rows.length + " truy vấn từ Search Console");
+            save();
+            gscApi(url, { startDate: iso(start), endDate: iso(end), dimensions: ["page"], rowLimit: 250, dataState: "final" }, function (pdata) {
+              gsc.busy = false;
+              g.pages = (pdata.rows || []).map(function (r) {
+                return { page: r.keys[0], clicks: r.clicks || 0, impressions: r.impressions || 0, ctr: r.ctr || 0, position: r.position || 0 };
+              });
+              save(); render();
+              toast("Đã tải " + g.rows.length + " truy vấn và " + g.pages.length + " trang từ Search Console");
+            });
           });
         }
         function gscSyncPositions() {
@@ -1876,6 +1891,101 @@
 
           var kwByQuery = {};
           p.keywords.forEach(function (k) { kwByQuery[String(k.keyword).trim().toLowerCase()] = k; });
+
+          /* ---- Báo cáo từ khoá theo nhóm thứ hạng ---- */
+          var BANDS = [
+            { label: "Top 1–3", sub: "Vị trí trung bình từ 1 đến 3 — nhóm đang mang traffic tốt nhất, cần giữ vững.", test: function (pos) { return pos <= 3; } },
+            { label: "Top 3–5", sub: "Vị trí trung bình trên 3 đến 5 — chỉ còn cách top 3 một bước, ưu tiên tối ưu để đẩy lên.", test: function (pos) { return pos > 3 && pos <= 5; } },
+            { label: "Top 5–10", sub: "Vị trí trung bình trên 5 đến 10 — đang ở nửa dưới trang 1, cần cải thiện CTR và nội dung.", test: function (pos) { return pos > 5 && pos <= 10; } },
+            { label: "Top 10–20", sub: "Vị trí trung bình trên 10 đến 20 — trang 2, gần trang 1 nhất; ứng viên hàng đầu để đẩy hạng.", test: function (pos) { return pos > 10 && pos <= 20; } },
+            { label: "Ngoài top 20", sub: "Vị trí trung bình trên 20 — cần xem lại ý định tìm kiếm, nội dung và liên kết nội bộ.", test: function (pos) { return pos > 20; } }
+          ];
+          function gscRowHtml(r, tracked) {
+            var kw = kwByQuery[String(r.query || "").trim().toLowerCase()];
+            return "<tr>" +
+              '<td data-label="Từ khoá"><span class="cell-main">' + esc(r.query) + "</span></td>" +
+              '<td class="num" data-label="Vị trí TB">' + posBadge(Math.round(r.position)) + ' <span class="cell-sub">' + Number(r.position).toFixed(1).replace(".", ",") + "</span></td>" +
+              '<td class="num" data-label="Click">' + fmtNum(r.clicks) + "</td>" +
+              '<td class="num" data-label="Hiển thị">' + fmtNum(r.impressions) + "</td>" +
+              '<td class="num" data-label="CTR">' + (r.ctr * 100).toFixed(2).replace(".", ",") + "%</td>" +
+              (tracked ? '<td data-label="Theo dõi">' + (kw ? '<span class="chip green">Đang theo dõi</span>' : '<span class="chip gray">Chưa theo dõi</span>') + "</td>" : "") +
+              "</tr>";
+          }
+          function gscTableHead(tracked) {
+            return '<div class="table-wrap"><table><thead><tr><th>Từ khoá</th><th class="num">Vị trí TB</th><th class="num">Click</th><th class="num">Hiển thị</th><th class="num">CTR</th>' + (tracked ? "<th>Trạng thái theo dõi</th>" : "") + "</tr></thead><tbody>";
+          }
+          var sortedByImpr = g.rows.slice().sort(function (a, b) { return b.impressions - a.impressions; });
+          html += '<div class="report-head"><h2>Báo cáo từ khoá theo nhóm thứ hạng</h2>' +
+            '<p class="band-sub">Chia theo vị trí trung bình của từng truy vấn trong khoảng ngày đã tải. Các nhóm không chồng lấn nhau: Top 1–3 là vị trí ≤ 3, Top 3–5 là trên 3 đến 5, Top 5–10 là trên 5 đến 10.</p></div>';
+          BANDS.forEach(function (band) {
+            var bandRows = sortedByImpr.filter(function (r) { return band.test(Number(r.position) || 999); });
+            var bClicks = 0, bImpr = 0;
+            bandRows.forEach(function (r) { bClicks += r.clicks; bImpr += r.impressions; });
+            html += '<div class="report-head"><h2>' + band.label +
+              ' <span class="cnt">' + bandRows.length + " từ khoá</span></h2>" +
+              '<p class="band-sub">' + band.sub + " Tổng: " + fmtNum(bClicks) + " click · " + fmtNum(bImpr) + " lượt hiển thị.</p></div>";
+            if (!bandRows.length) {
+              html += '<p class="empty-note">Chưa có từ khoá nào trong nhóm này.</p>';
+            } else {
+              html += gscTableHead(true);
+              bandRows.forEach(function (r) { html += gscRowHtml(r, true); });
+              html += "</tbody></table></div>";
+            }
+          });
+
+          /* ---- Báo cáo theo trang / bài viết, chia nhóm thứ hạng ---- */
+          var PAGE_BAND_NOTES = {
+            "Top 1–3": "Trang đang đứng ở nhóm vị trí cao nhất — giữ vững nội dung và liên kết nội bộ trỏ về trang này.",
+            "Top 3–5": "Trang sắp chạm top 3 — tối ưu lại tiêu đề, đoạn mở đầu và CTR để bứt lên.",
+            "Top 5–10": "Trang ở nửa dưới trang 1 — bổ sung nội dung chuyên sâu và internal link để tiến lên nửa trên.",
+            "Top 10–20": "Trang ở trang 2 — ứng viên tốt nhất để đẩy lên trang 1 bằng nội dung và backlink.",
+            "Ngoài top 20": "Trang còn yếu — kiểm tra lại truy vấn đích, mức độ liên quan và liên kết nội bộ."
+          };
+          html += '<div class="report-head"><h2>Báo cáo theo trang (bài viết) theo nhóm thứ hạng</h2>' +
+            '<p class="band-sub">Các trang đích đang nhận hiển thị và click từ Google trong cùng khoảng ngày, chia theo vị trí trung bình của trang (cùng cách chia nhóm như báo cáo từ khoá ở trên). Trang nào trùng URL với một bài viết trong tab Bài viết sẽ được gắn nhãn kèm trạng thái của bài.</p></div>';
+          if (!g.pages.length) {
+            html += '<p class="empty-note">Chưa có dữ liệu theo trang trong lần tải gần nhất. Kết nối Search Console rồi bấm “Tải dữ liệu thứ hạng” để tải kèm báo cáo theo trang.</p>';
+          } else {
+            function normPageUrl(u) {
+              return String(u || "").toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
+            }
+            var artByUrl = {};
+            p.articles.forEach(function (a) { if (a.url) artByUrl[normPageUrl(a.url)] = a; });
+            var pageRowsByImpr = g.pages.slice().sort(function (a, b) { return b.impressions - a.impressions; });
+            function pageRowHtml(r) {
+              var pageUrl = safeUrl(r.page);
+              var art = artByUrl[normPageUrl(r.page)];
+              return "<tr>" +
+                '<td data-label="Trang"><div>' +
+                (pageUrl ? '<a class="cell-main" href="' + esc(pageUrl) + '" target="_blank" rel="noopener">' + esc(shortUrl(r.page)) + "</a>" : '<span class="cell-main">' + esc(shortUrl(r.page)) + "</span>") +
+                "</div></td>" +
+                '<td class="num" data-label="Vị trí TB">' + posBadge(Math.round(r.position)) + ' <span class="cell-sub">' + Number(r.position).toFixed(1).replace(".", ",") + "</span></td>" +
+                '<td class="num" data-label="Click">' + fmtNum(r.clicks) + "</td>" +
+                '<td class="num" data-label="Hiển thị">' + fmtNum(r.impressions) + "</td>" +
+                '<td class="num" data-label="CTR">' + (r.ctr * 100).toFixed(2).replace(".", ",") + "%</td>" +
+                '<td data-label="Bài viết">' + (art
+                  ? '<span class="chip green">Có trong Bài viết</span> <span class="cell-sub">' + esc(art.title) + " · " + esc(art.status || "Ý tưởng") + "</span>"
+                  : '<span class="chip gray">Chưa quản lý</span>') + "</td>" +
+                "</tr>";
+            }
+            BANDS.forEach(function (band) {
+              var bandPages = pageRowsByImpr.filter(function (r) { return band.test(Number(r.position) || 999); });
+              var pClicks = 0, pImpr = 0;
+              bandPages.forEach(function (r) { pClicks += r.clicks; pImpr += r.impressions; });
+              html += '<div class="report-head"><h2>Trang ở ' + band.label +
+                ' <span class="cnt">' + bandPages.length + " trang</span></h2>" +
+                '<p class="band-sub">' + (PAGE_BAND_NOTES[band.label] || "") + " Tổng: " + fmtNum(pClicks) + " click · " + fmtNum(pImpr) + " lượt hiển thị.</p></div>";
+              if (!bandPages.length) {
+                html += '<p class="empty-note">Chưa có trang nào trong nhóm này.</p>';
+              } else {
+                html += '<div class="table-wrap"><table><thead><tr><th>Trang / bài viết</th><th class="num">Vị trí TB</th><th class="num">Click</th><th class="num">Hiển thị</th><th class="num">CTR</th><th>Bài viết trong app</th></tr></thead><tbody>';
+                bandPages.forEach(function (r) { html += pageRowHtml(r); });
+                html += "</tbody></table></div>";
+              }
+            });
+          }
+
+          html += '<div class="report-head"><h2>Tất cả truy vấn</h2><p class="band-sub">Toàn bộ truy vấn đã tải, sắp xếp theo lượt hiển thị giảm dần.</p></div>';
           var rows = g.rows.slice().sort(function (a, b) { return b.impressions - a.impressions; });
           html += '<div class="table-wrap"><table><thead><tr><th>Truy vấn trên Google</th><th class="num">Vị trí TB</th><th class="num">Click</th><th class="num">Hiển thị</th><th class="num">CTR</th><th>Trạng thái theo dõi</th></tr></thead><tbody>';
           rows.forEach(function (r) {
