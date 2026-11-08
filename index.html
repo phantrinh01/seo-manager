@@ -467,6 +467,50 @@
         td.gsc-qcell { max-width: none; }
       }
 
+      /* ---------- Modules: audit / tasks / KPI / competitors / content checklist / social ---------- */
+      .progress-track { background: var(--surface-2); border-radius: 6px; height: 10px; overflow: hidden; min-width: 90px; }
+      .progress-fill { height: 100%; border-radius: 6px; background: var(--accent); }
+      .progress-fill.mid { background: #58a6d6; }
+      .progress-fill.low { background: #d9a441; }
+      .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+      .kpi-card h3 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+      .kpi-card .kpi-note { font-size: 13px; color: var(--muted); margin: 10px 0 0; line-height: 1.55; }
+      .kpi-row { display: grid; grid-template-columns: 118px 1fr 92px; gap: 10px; align-items: center; margin-bottom: 9px; font-size: 13.5px; }
+      .kpi-row .kpi-val { font-family: "IBM Plex Mono", monospace; text-align: right; font-size: 12.5px; white-space: nowrap; }
+      .kpi-row .kpi-val strong { color: var(--ink); }
+      .summary-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+      .check-list { display: flex; flex-direction: column; gap: 8px; }
+      .check-row {
+        display: flex; gap: 12px; align-items: flex-start;
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: var(--radius); padding: 12px 14px;
+      }
+      .check-row.done { border-color: var(--accent); background: var(--accent-soft); }
+      .check-row .check-main { flex: 1; min-width: 0; }
+      .check-row .check-title { font-weight: 600; font-size: 14.5px; }
+      .check-row .check-hint { font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+      .check-group-title { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 18px 0 8px; }
+      .check-group-title:first-child { margin-top: 0; }
+      .toggle-pill {
+        border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+        border-radius: 20px; padding: 5px 12px; font-size: 12.5px; font-weight: 700; flex: none;
+      }
+      .toggle-pill.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+      @media (prefers-color-scheme: dark) { .toggle-pill.on { color: #0b1512; } }
+      .score-badge {
+        display: inline-block; font-family: "IBM Plex Mono", monospace; font-weight: 700;
+        border-radius: 9px; padding: 3px 10px; font-size: 13.5px;
+        background: var(--surface-2); color: var(--ink-2);
+      }
+      .score-badge.good { background: var(--accent-soft); color: var(--accent-strong); }
+      .score-badge.mid { background: var(--amber-soft); color: var(--amber); }
+      .score-badge.bad { background: var(--red-soft); color: var(--red); }
+      @media (max-width: 720px) {
+        .kpi-grid { grid-template-columns: 1fr; }
+        .kpi-row { grid-template-columns: 96px 1fr 78px; }
+        .check-row { flex-wrap: wrap; }
+      }
+
       /* ---------- Responsive ---------- */
       @media (max-width: 900px) {
         .app { grid-template-columns: 1fr; }
@@ -554,6 +598,12 @@
           <button class="tab" data-view="keywords" type="button">Từ khoá <span class="count" id="countKw">0</span></button>
           <button class="tab" data-view="articles" type="button">Bài viết <span class="count" id="countArt">0</span></button>
           <button class="tab" data-view="backlinks" type="button">Backlink <span class="count" id="countBl">0</span></button>
+          <button class="tab" data-view="audit" type="button">Hiện trạng web <span class="count" id="countAudit">0</span></button>
+          <button class="tab" data-view="tasks" type="button">Checklist việc <span class="count" id="countTask">0</span></button>
+          <button class="tab" data-view="kpi" type="button">KPI <span class="count" id="countKpi">0</span></button>
+          <button class="tab" data-view="competitors" type="button">Đối thủ <span class="count" id="countComp">0</span></button>
+          <button class="tab" data-view="seocheck" type="button">Checklist Content SEO</button>
+          <button class="tab" data-view="social" type="button">Social <span class="count" id="countSocial">0</span></button>
           <button class="tab" data-view="gsc" type="button">Search Console</button>
         </nav>
 
@@ -625,6 +675,88 @@
             <button class="btn primary" id="addBlBtn" type="button">+ Thêm backlink</button>
           </div>
           <div id="blBody"></div>
+        </section>
+
+        <!-- Hiện trạng website -->
+        <section class="view" id="view-audit">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input class="search" id="auditSearch" type="search" placeholder="Tìm hạng mục hoặc ghi chú…" />
+              <select class="filter-select" id="auditStatusFilter">
+                <option value="">Mọi mức đánh giá</option>
+                <option>Tốt</option><option>Cần cải thiện</option><option>Chưa tốt</option><option>Chưa đánh giá</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" id="auditTemplateBtn" type="button">+ Bộ hạng mục mẫu</button>
+              <button class="btn primary" id="addAuditBtn" type="button">+ Thêm hạng mục</button>
+            </div>
+          </div>
+          <div id="auditBody"></div>
+        </section>
+
+        <!-- Checklist công việc -->
+        <section class="view" id="view-tasks">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input class="search" id="taskSearch" type="search" placeholder="Tìm công việc, nhóm hoặc người phụ trách…" />
+              <select class="filter-select" id="taskStatusFilter">
+                <option value="">Mọi trạng thái</option>
+                <option>Chưa làm</option><option>Đang làm</option><option>Hoàn thành</option>
+              </select>
+              <select class="filter-select" id="taskGroupFilter"><option value="">Tất cả nhóm việc</option></select>
+            </div>
+            <button class="btn primary" id="addTaskBtn" type="button">+ Thêm công việc</button>
+          </div>
+          <div id="taskBody"></div>
+        </section>
+
+        <!-- KPI dự án -->
+        <section class="view" id="view-kpi">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <span style="font-size:14px;color:var(--muted)">Mục tiêu và kết quả thực tế theo từng tháng của dự án.</span>
+            </div>
+            <button class="btn primary" id="addKpiBtn" type="button">+ Thêm tháng KPI</button>
+          </div>
+          <div id="kpiBody"></div>
+        </section>
+
+        <!-- Phân tích đối thủ -->
+        <section class="view" id="view-competitors">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input class="search" id="compSearch" type="search" placeholder="Tìm website đối thủ hoặc nhóm từ khoá…" />
+            </div>
+            <button class="btn primary" id="addCompBtn" type="button">+ Thêm đối thủ</button>
+          </div>
+          <div id="compBody"></div>
+        </section>
+
+        <!-- Checklist Content SEO -->
+        <section class="view" id="view-seocheck">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <select class="filter-select" id="seoArtSelect" aria-label="Chọn bài viết để chấm Checklist Content SEO"></select>
+            </div>
+            <button class="btn" id="addSeoCriterionBtn" type="button">+ Thêm tiêu chí riêng</button>
+          </div>
+          <div id="seoBody"></div>
+        </section>
+
+        <!-- Chăm sóc Social -->
+        <section class="view" id="view-social">
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <input class="search" id="socialSearch" type="search" placeholder="Tìm nền tảng, profile, người phụ trách hoặc link bài share…" />
+              <select class="filter-select" id="socialIndexFilter">
+                <option value="">Mọi trạng thái index</option>
+                <option value="yes">Đã index</option><option value="no">Chưa index</option><option value="unknown">Chưa kiểm tra</option>
+              </select>
+            </div>
+            <button class="btn primary" id="addSocialBtn" type="button">+ Thêm mục social</button>
+          </div>
+          <div id="socialBody"></div>
         </section>
 
         <!-- Google Search Console -->
@@ -855,6 +987,12 @@
           if (!p.gsc || typeof p.gsc !== "object") p.gsc = { property: "", lastSync: "", range: 28, rangeStart: "", rangeEnd: "", rows: [], pages: [] };
           if (!Array.isArray(p.gsc.rows)) p.gsc.rows = [];
           if (!Array.isArray(p.gsc.pages)) p.gsc.pages = [];
+          if (!Array.isArray(p.siteAudit)) p.siteAudit = [];
+          if (!Array.isArray(p.tasks)) p.tasks = [];
+          if (!Array.isArray(p.kpis)) p.kpis = [];
+          if (!Array.isArray(p.competitors)) p.competitors = [];
+          if (!Array.isArray(p.socials)) p.socials = [];
+          if (!Array.isArray(p.customSeoCriteria)) p.customSeoCriteria = [];
           return p;
         }
 
@@ -1548,6 +1686,20 @@
           kws.filter(function (k) { return !k.targetUrl; }).slice(0, 3).forEach(function (k) {
             items.push({ cls: "blue", text: "Từ khoá “" + k.keyword + "” chưa có URL đích" });
           });
+          (p.siteAudit || []).filter(function (x) { return x.status === "Chưa tốt"; }).slice(0, 3).forEach(function (x) {
+            items.push({ cls: "red", text: "Hiện trạng web: hạng mục “" + x.category + "” đang ở mức Chưa tốt" });
+          });
+          (p.tasks || []).filter(function (t) { return t.status !== "Hoàn thành"; }).slice(0, 3).forEach(function (t) {
+            items.push({ cls: "amber", text: "Công việc chưa xong: “" + t.title + "”" + (t.due ? " (hạn " + fmtDate(t.due) + ")" : "") });
+          });
+          (p.socials || []).filter(function (s) { return s.indexed === "no"; }).slice(0, 3).forEach(function (s) {
+            items.push({ cls: "amber", text: "Link social trên " + s.platform + " chưa được index" + (s.shareUrl ? ": " + shortUrl(s.shareUrl) : "") });
+          });
+          arts.map(function (a) { return { a: a, sc: seoScoreOf(p, a) }; })
+            .filter(function (x) { return x.sc.total > 0 && x.sc.pct < 50 && x.a.status === "Đã xuất bản"; })
+            .slice(0, 3).forEach(function (x) {
+              items.push({ cls: "blue", text: "Bài “" + x.a.title + "” đã xuất bản nhưng điểm Checklist Content SEO mới đạt " + x.sc.pct + "%" });
+            });
           document.getElementById("attentionList").innerHTML = items.length
             ? items.slice(0, 10).map(function (i) { return '<li><span class="dot ' + i.cls + '"></span><span>' + esc(i.text) + "</span></li>"; }).join("")
             : '<li><span class="dot" style="background:var(--accent)"></span><span>Không có mục nào cần chú ý lúc này.</span></li>';
@@ -1595,6 +1747,11 @@
           document.getElementById("countKw").textContent = p.keywords.length;
           document.getElementById("countArt").textContent = p.articles.length;
           document.getElementById("countBl").textContent = p.backlinks.length;
+          document.getElementById("countAudit").textContent = p.siteAudit.length;
+          document.getElementById("countTask").textContent = p.tasks.filter(function (t) { return t.status !== "Hoàn thành"; }).length;
+          document.getElementById("countKpi").textContent = p.kpis.length;
+          document.getElementById("countComp").textContent = p.competitors.length;
+          document.getElementById("countSocial").textContent = p.socials.length;
           document.querySelectorAll(".tab").forEach(function (t) {
             t.classList.toggle("active", t.getAttribute("data-view") === currentView);
           });
@@ -1603,6 +1760,12 @@
           if (currentView === "keywords") renderKeywords(p);
           if (currentView === "articles") renderArticles(p);
           if (currentView === "backlinks") renderBacklinks(p);
+          if (currentView === "audit") renderAudit(p);
+          if (currentView === "tasks") renderTasks(p);
+          if (currentView === "kpi") renderKpi(p);
+          if (currentView === "competitors") renderCompetitors(p);
+          if (currentView === "seocheck") renderSeoCheck(p);
+          if (currentView === "social") renderSocial(p);
           if (currentView === "gsc") renderGsc(p);
         }
         document.getElementById("projectList").addEventListener("click", function (e) {
@@ -1616,6 +1779,25 @@
         document.getElementById("addKwBtn").addEventListener("click", function () { var p = activeProject(); if (p) openKwModal(p, null); });
         document.getElementById("addArtBtn").addEventListener("click", function () { var p = activeProject(); if (p) openArtModal(p, null); });
         document.getElementById("addBlBtn").addEventListener("click", function () { var p = activeProject(); if (p) openBlModal(p, null); });
+        document.getElementById("addAuditBtn").addEventListener("click", function () { var p = activeProject(); if (p) openAuditModal(p, null); });
+        document.getElementById("auditTemplateBtn").addEventListener("click", function () {
+          var p = activeProject(); if (!p) return;
+          var added = 0;
+          AUDIT_TEMPLATE.forEach(function (cat) {
+            if (!p.siteAudit.some(function (x) { return x.category === cat; })) {
+              p.siteAudit.push({ id: uid(), category: cat, status: "Chưa đánh giá", score: "", note: "", updated: "" });
+              added++;
+            }
+          });
+          save(); render();
+          toast(added ? "Đã tạo " + added + " hạng mục mẫu — hãy đánh giá từng hạng mục" : "Bộ hạng mục mẫu đã có đủ trong danh sách");
+        });
+        document.getElementById("addTaskBtn").addEventListener("click", function () { var p = activeProject(); if (p) openTaskModal(p, null); });
+        document.getElementById("addKpiBtn").addEventListener("click", function () { var p = activeProject(); if (p) openKpiModal(p, null); });
+        document.getElementById("addCompBtn").addEventListener("click", function () { var p = activeProject(); if (p) openCompModal(p, null); });
+        document.getElementById("addSocialBtn").addEventListener("click", function () { var p = activeProject(); if (p) openSocialModal(p, null); });
+        document.getElementById("addSeoCriterionBtn").addEventListener("click", function () { var p = activeProject(); if (p) openSeoCriterionModal(p); });
+        document.getElementById("seoArtSelect").addEventListener("change", function () { seoSelectedArtId = this.value; render(); });
         document.addEventListener("click", function (e) {
           var p = activeProject();
           if (!p) return;
@@ -1630,6 +1812,47 @@
           if (oe) { var art = p.articles.find(function (x) { return x.id === oe.getAttribute("data-open-editor"); }); if (art) openEditor(p, art); }
           var eb = e.target.closest("[data-edit-bl]");
           if (eb) { var b = p.backlinks.find(function (x) { return x.id === eb.getAttribute("data-edit-bl"); }); if (b) openBlModal(p, b); }
+          if (e.target.closest("[data-add-task]")) openTaskModal(p, null);
+          if (e.target.closest("[data-add-kpi]")) openKpiModal(p, null);
+          if (e.target.closest("[data-add-comp]")) openCompModal(p, null);
+          if (e.target.closest("[data-add-social]")) openSocialModal(p, null);
+          if (e.target.closest("[data-audit-template]")) document.getElementById("auditTemplateBtn").click();
+          var eau = e.target.closest("[data-edit-audit]");
+          if (eau) { var au = p.siteAudit.find(function (x) { return x.id === eau.getAttribute("data-edit-audit"); }); if (au) openAuditModal(p, au); }
+          var et = e.target.closest("[data-edit-task]");
+          if (et) { var tk = p.tasks.find(function (x) { return x.id === et.getAttribute("data-edit-task"); }); if (tk) openTaskModal(p, tk); }
+          var tav = e.target.closest("[data-task-advance]");
+          if (tav) {
+            var tk2 = p.tasks.find(function (x) { return x.id === tav.getAttribute("data-task-advance"); });
+            if (tk2) {
+              tk2.status = tk2.status === "Chưa làm" ? "Đang làm" : tk2.status === "Đang làm" ? "Hoàn thành" : "Chưa làm";
+              save(); render(); toast("Đã chuyển trạng thái: " + tk2.status);
+            }
+          }
+          var ekp = e.target.closest("[data-edit-kpi]");
+          if (ekp) { var kp = p.kpis.find(function (x) { return x.id === ekp.getAttribute("data-edit-kpi"); }); if (kp) openKpiModal(p, kp); }
+          var ecp = e.target.closest("[data-edit-comp]");
+          if (ecp) { var cp = p.competitors.find(function (x) { return x.id === ecp.getAttribute("data-edit-comp"); }); if (cp) openCompModal(p, cp); }
+          var eso = e.target.closest("[data-edit-social]");
+          if (eso) { var so = p.socials.find(function (x) { return x.id === eso.getAttribute("data-edit-social"); }); if (so) openSocialModal(p, so); }
+          var stg = e.target.closest("[data-seo-toggle]");
+          if (stg) {
+            var art2 = p.articles.find(function (x) { return x.id === seoSelectedArtId; });
+            if (art2) {
+              if (!art2.seoChecks || typeof art2.seoChecks !== "object") art2.seoChecks = {};
+              var cid = stg.getAttribute("data-seo-toggle");
+              art2.seoChecks[cid] = !art2.seoChecks[cid];
+              save(); render();
+            }
+          }
+          var sdc = e.target.closest("[data-seo-del-criterion]");
+          if (sdc) {
+            var cid2 = sdc.getAttribute("data-seo-del-criterion");
+            askConfirm("Xoá tiêu chí riêng?", "Tiêu chí này sẽ bị xoá khỏi checklist của mọi bài viết.", function () {
+              p.customSeoCriteria = p.customSeoCriteria.filter(function (x) { return x.id !== cid2; });
+              save(); render(); toast("Đã xoá tiêu chí riêng");
+            });
+          }
         });
 
         /* Delete-project button: direct confirm */
@@ -1644,7 +1867,7 @@
         }, true);
 
         /* Filters re-render */
-        ["kwSearch", "kwClusterFilter", "kwIntentFilter", "artSearch", "artStatusFilter", "blSearch", "blStatusFilter"].forEach(function (id) {
+        ["kwSearch", "kwClusterFilter", "kwIntentFilter", "artSearch", "artStatusFilter", "blSearch", "blStatusFilter", "auditSearch", "auditStatusFilter", "taskSearch", "taskStatusFilter", "taskGroupFilter", "compSearch", "socialSearch", "socialIndexFilter"].forEach(function (id) {
           var el = document.getElementById(id);
           el.addEventListener("input", render);
           el.addEventListener("change", render);
@@ -1687,6 +1910,461 @@
           };
           reader.readAsText(file);
         });
+
+        /* ---------------- 1) Hiện trạng website ---------------- */
+        var AUDIT_STATUSES = ["Tốt", "Cần cải thiện", "Chưa tốt", "Chưa đánh giá"];
+        var AUDIT_TEMPLATE = [
+          "Giao diện & trải nghiệm người dùng (UX/UI)", "Tốc độ tải trang / Core Web Vitals", "Hiển thị trên mobile",
+          "Cấu trúc website & điều hướng", "Chất lượng bài viết / nội dung", "Tối ưu Onpage (title, heading, meta)",
+          "Technical SEO (sitemap, robots, canonical, schema)", "Internal link", "Hồ sơ backlink",
+          "Chỉ số DA / PA", "Chỉ số DR (Ahrefs)", "Entity & nhận diện thương hiệu", "Hình ảnh & media",
+          "Bảo mật HTTPS & chứng chỉ SSL", "Trạng thái index trên Google"
+        ];
+        function auditStatusChip(s) {
+          var cls = s === "Tốt" ? "green" : s === "Cần cải thiện" ? "amber" : s === "Chưa tốt" ? "red" : "gray";
+          return '<span class="chip ' + cls + '">' + esc(s || "Chưa đánh giá") + "</span>";
+        }
+        function openAuditModal(p, item) {
+          openModal(
+            item ? "Sửa hạng mục hiện trạng" : "Thêm hạng mục hiện trạng",
+            "Đánh giá từng hạng mục của website theo mức Tốt / Cần cải thiện / Chưa tốt kèm ghi chú để lập kế hoạch cải thiện.",
+            [
+              { name: "category", label: "Hạng mục", required: true, full: true, value: item ? item.category : "", placeholder: "Ví dụ: Tốc độ tải trang" },
+              { name: "status", label: "Mức đánh giá", type: "select", options: AUDIT_STATUSES, value: item ? item.status : "Chưa đánh giá" },
+              { name: "score", label: "Điểm / chỉ số (tuỳ chọn)", value: item ? item.score : "", placeholder: "Ví dụ: DA 25, PageSpeed 82" },
+              { name: "note", label: "Ghi chú / việc cần cải thiện", type: "textarea", full: true, value: item ? item.note : "" }
+            ],
+            function (data) {
+              var rec = { category: data.category.trim(), status: data.status, score: (data.score || "").trim(), note: (data.note || "").trim(), updated: new Date().toISOString().slice(0, 10) };
+              if (item) { Object.assign(item, rec); toast("Đã cập nhật hạng mục"); }
+              else { rec.id = uid(); p.siteAudit.push(rec); toast("Đã thêm hạng mục"); }
+              save(); render();
+            },
+            item ? function () {
+              askConfirm("Xoá hạng mục?", "Hạng mục “" + item.category + "” sẽ bị xoá khỏi đánh giá hiện trạng.", function () {
+                p.siteAudit = p.siteAudit.filter(function (x) { return x.id !== item.id; });
+                save(); render(); toast("Đã xoá hạng mục");
+              });
+            } : null
+          );
+        }
+        function renderAudit(p) {
+          var body = document.getElementById("auditBody");
+          if (p.siteAudit.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Chưa có đánh giá hiện trạng</h3><p>Bấm “Bộ hạng mục mẫu” để tạo nhanh các hạng mục chuẩn (giao diện, tốc độ, nội dung, backlink, DA/PA…), hoặc tự thêm từng hạng mục.</p><button class="btn primary" type="button" data-audit-template>Tạo bộ hạng mục mẫu</button></div>';
+            return;
+          }
+          var q = document.getElementById("auditSearch").value.trim().toLowerCase();
+          var st = document.getElementById("auditStatusFilter").value;
+          var counts = { "Tốt": 0, "Cần cải thiện": 0, "Chưa tốt": 0, "Chưa đánh giá": 0 };
+          p.siteAudit.forEach(function (x) { counts[x.status || "Chưa đánh giá"] = (counts[x.status || "Chưa đánh giá"] || 0) + 1; });
+          var html = '<div class="summary-strip">' +
+            '<span class="chip green">Tốt: ' + counts["Tốt"] + '</span>' +
+            '<span class="chip amber">Cần cải thiện: ' + counts["Cần cải thiện"] + '</span>' +
+            '<span class="chip red">Chưa tốt: ' + counts["Chưa tốt"] + '</span>' +
+            '<span class="chip gray">Chưa đánh giá: ' + counts["Chưa đánh giá"] + '</span></div>';
+          var rows = p.siteAudit.filter(function (x) {
+            if (st && (x.status || "Chưa đánh giá") !== st) return false;
+            if (q && (x.category + " " + (x.note || "") + " " + (x.score || "")).toLowerCase().indexOf(q) === -1) return false;
+            return true;
+          });
+          if (rows.length === 0) {
+            body.innerHTML = html + '<div class="empty-state"><h3>Không có hạng mục khớp bộ lọc</h3><p>Thử xoá bớt điều kiện tìm kiếm hoặc lọc.</p></div>';
+            return;
+          }
+          html += '<div class="table-wrap"><table><thead><tr><th>Hạng mục</th><th>Mức đánh giá</th><th>Điểm / chỉ số</th><th>Ghi chú</th><th>Cập nhật</th><th></th></tr></thead><tbody>';
+          rows.forEach(function (x) {
+            html += "<tr>" +
+              '<td data-label="Hạng mục"><span class="cell-main">' + esc(x.category) + "</span></td>" +
+              '<td data-label="Mức đánh giá">' + auditStatusChip(x.status) + "</td>" +
+              '<td data-label="Điểm / chỉ số">' + esc(x.score || "—") + "</td>" +
+              '<td data-label="Ghi chú">' + esc(x.note || "—") + "</td>" +
+              '<td data-label="Cập nhật">' + fmtDate(x.updated) + "</td>" +
+              '<td data-label=""><div class="row-actions"><button class="btn small ghost" type="button" data-edit-audit="' + x.id + '">Sửa</button></div></td></tr>';
+          });
+          html += "</tbody></table></div>";
+          body.innerHTML = html;
+        }
+
+        /* ---------------- 2) Checklist công việc ---------------- */
+        var TASK_STATUSES = ["Chưa làm", "Đang làm", "Hoàn thành"];
+        var TASK_GROUPS = ["Setup website", "Check Onpage", "Technical SEO", "Content", "Offpage / Backlink", "Entity / Social", "Kế hoạch tháng", "Khác"];
+        function taskStatusChip(s) {
+          var cls = s === "Hoàn thành" ? "green" : s === "Đang làm" ? "blue" : "gray";
+          return '<span class="chip ' + cls + '">' + esc(s) + "</span>";
+        }
+        function taskGroupsOf(p) {
+          var seen = {}, out = [];
+          p.tasks.forEach(function (t) { if (t.group && !seen[t.group]) { seen[t.group] = 1; out.push(t.group); } });
+          return out.sort();
+        }
+        function openTaskModal(p, t) {
+          openModal(
+            t ? "Sửa công việc" : "Thêm công việc",
+            "Checklist công việc của dự án: gộp các đầu việc setup, check onpage và kế hoạch theo tháng vào một danh sách chung.",
+            [
+              { name: "title", label: "Tên công việc", required: true, full: true, value: t ? t.title : "" },
+              { name: "group", label: "Nhóm việc", value: t ? t.group : "", placeholder: "Ví dụ: Check Onpage" },
+              { name: "assignee", label: "Người phụ trách", value: t ? t.assignee : "" },
+              { name: "status", label: "Trạng thái", type: "select", options: TASK_STATUSES, value: t ? t.status : "Chưa làm" },
+              { name: "due", label: "Hạn hoàn thành", type: "date", value: t ? t.due : "" },
+              { name: "description", label: "Mô tả / ghi chú", type: "textarea", full: true, value: t ? t.description : "" }
+            ],
+            function (data) {
+              var rec = { title: data.title.trim(), group: (data.group || "").trim(), assignee: (data.assignee || "").trim(), status: data.status, due: data.due || "", description: (data.description || "").trim() };
+              if (t) { Object.assign(t, rec); toast("Đã cập nhật công việc"); }
+              else { rec.id = uid(); p.tasks.push(rec); toast("Đã thêm công việc"); }
+              save(); render();
+            },
+            t ? function () {
+              askConfirm("Xoá công việc?", "Công việc “" + t.title + "” sẽ bị xoá khỏi checklist.", function () {
+                p.tasks = p.tasks.filter(function (x) { return x.id !== t.id; });
+                save(); render(); toast("Đã xoá công việc");
+              });
+            } : null
+          );
+        }
+        function renderTasks(p) {
+          var body = document.getElementById("taskBody");
+          var groupSel = document.getElementById("taskGroupFilter");
+          var curGroup = groupSel.value;
+          groupSel.innerHTML = '<option value="">Tất cả nhóm việc</option>' + taskGroupsOf(p).map(function (g) {
+            return '<option value="' + esc(g) + '"' + (g === curGroup ? " selected" : "") + ">" + esc(g) + "</option>";
+          }).join("");
+          if (p.tasks.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Chưa có công việc nào</h3><p>Thêm các đầu việc setup website, check onpage, content, offpage… kèm người phụ trách và trạng thái để theo dõi tiến độ.</p><button class="btn primary" type="button" data-add-task>+ Thêm công việc</button></div>';
+            return;
+          }
+          var done = p.tasks.filter(function (t) { return t.status === "Hoàn thành"; }).length;
+          var pct = Math.round(done / p.tasks.length * 100);
+          var html = '<div class="panel" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px"><strong>Tiến độ checklist</strong><span class="mono" style="font-size:13px">' + done + "/" + p.tasks.length + " việc · " + pct + '%</span></div><div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div></div>';
+          var q = document.getElementById("taskSearch").value.trim().toLowerCase();
+          var st = document.getElementById("taskStatusFilter").value;
+          var rows = p.tasks.filter(function (t) {
+            if (st && t.status !== st) return false;
+            if (curGroup && t.group !== curGroup) return false;
+            if (q && (t.title + " " + (t.group || "") + " " + (t.assignee || "") + " " + (t.description || "")).toLowerCase().indexOf(q) === -1) return false;
+            return true;
+          });
+          if (rows.length === 0) {
+            body.innerHTML = html + '<div class="empty-state"><h3>Không có công việc khớp bộ lọc</h3><p>Thử xoá bớt điều kiện tìm kiếm hoặc lọc.</p></div>';
+            return;
+          }
+          html += '<div class="table-wrap"><table><thead><tr><th>Công việc</th><th>Nhóm</th><th>Người phụ trách</th><th>Hạn</th><th>Trạng thái</th><th></th></tr></thead><tbody>';
+          rows.forEach(function (t) {
+            var nextLabel = t.status === "Chưa làm" ? "Bắt đầu" : t.status === "Đang làm" ? "Đánh dấu xong" : "Mở lại";
+            html += "<tr>" +
+              '<td data-label="Công việc"><div><span class="cell-main">' + esc(t.title) + "</span>" +
+              (t.description ? '<div class="cell-sub" style="word-break:normal">' + esc(t.description) + "</div>" : "") + "</div></td>" +
+              '<td data-label="Nhóm">' + esc(t.group || "—") + "</td>" +
+              '<td data-label="Người phụ trách">' + esc(t.assignee || "—") + "</td>" +
+              '<td data-label="Hạn">' + fmtDate(t.due) + "</td>" +
+              '<td data-label="Trạng thái">' + taskStatusChip(t.status) + "</td>" +
+              '<td data-label=""><div class="row-actions"><button class="btn small" type="button" data-task-advance="' + t.id + '">' + nextLabel + '</button><button class="btn small ghost" type="button" data-edit-task="' + t.id + '">Sửa</button></div></td></tr>';
+          });
+          html += "</tbody></table></div>";
+          body.innerHTML = html;
+        }
+
+        /* ---------------- 3) KPI dự án ---------------- */
+        var KPI_METRICS = [
+          { label: "Traffic / tháng", goal: "trafficGoal", actual: "trafficActual" },
+          { label: "Bài viết xuất bản", goal: "articlesGoal", actual: "articlesActual" },
+          { label: "Backlink mới", goal: "backlinksGoal", actual: "backlinksActual" },
+          { label: "Từ khoá top 10", goal: "top10Goal", actual: "top10Actual" },
+          { label: "DA", goal: "daGoal", actual: "daActual" },
+          { label: "DR", goal: "drGoal", actual: "drActual" }
+        ];
+        function openKpiModal(p, k) {
+          var fields = [
+            { name: "month", label: "Tháng (ví dụ: 11/2026)", required: true, full: true, value: k ? k.month : "", placeholder: "Ví dụ: Tháng 11/2026" }
+          ];
+          KPI_METRICS.forEach(function (m) {
+            fields.push({ name: m.goal, label: m.label + " — mục tiêu", type: "number", min: 0, step: "any", value: k ? k[m.goal] : "" });
+            fields.push({ name: m.actual, label: m.label + " — thực tế", type: "number", min: 0, step: "any", value: k ? k[m.actual] : "" });
+          });
+          fields.push({ name: "note", label: "Ghi chú tháng", type: "textarea", full: true, value: k ? k.note : "" });
+          openModal(
+            k ? "Sửa KPI tháng" : "Thêm tháng KPI",
+            "Đặt chỉ số mục tiêu cho tháng và cập nhật kết quả thực tế để xem mức độ hoàn thành từng chỉ số.",
+            fields,
+            function (data) {
+              var rec = { month: data.month.trim(), note: (data.note || "").trim() };
+              KPI_METRICS.forEach(function (m) {
+                rec[m.goal] = data[m.goal] === "" ? null : Number(data[m.goal]);
+                rec[m.actual] = data[m.actual] === "" ? null : Number(data[m.actual]);
+              });
+              if (k) { Object.assign(k, rec); toast("Đã cập nhật KPI"); }
+              else { rec.id = uid(); p.kpis.push(rec); toast("Đã thêm tháng KPI"); }
+              save(); render();
+            },
+            k ? function () {
+              askConfirm("Xoá tháng KPI?", "Dòng KPI “" + k.month + "” sẽ bị xoá.", function () {
+                p.kpis = p.kpis.filter(function (x) { return x.id !== k.id; });
+                save(); render(); toast("Đã xoá tháng KPI");
+              });
+            } : null
+          );
+        }
+        function renderKpi(p) {
+          var body = document.getElementById("kpiBody");
+          if (p.kpis.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Chưa có KPI nào</h3><p>Thêm KPI theo tháng: traffic, số bài viết, backlink, số từ khoá top 10, DA/DR — đặt mục tiêu rồi cập nhật kết quả thực tế.</p><button class="btn primary" type="button" data-add-kpi>+ Thêm tháng KPI</button></div>';
+            return;
+          }
+          var html = '<div class="kpi-grid">';
+          p.kpis.forEach(function (k) {
+            html += '<div class="panel kpi-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><h3>' + esc(k.month) + '</h3><button class="btn small ghost" type="button" data-edit-kpi="' + k.id + '">Sửa</button></div>';
+            KPI_METRICS.forEach(function (m) {
+              var goal = k[m.goal], actual = k[m.actual];
+              if (goal == null && actual == null) return;
+              var pct = goal ? Math.min(100, Math.round((Number(actual) || 0) / Number(goal) * 100)) : (actual ? 100 : 0);
+              var cls = pct >= 100 ? "" : pct >= 60 ? "mid" : "low";
+              html += '<div class="kpi-row"><span>' + m.label + '</span><div class="progress-track"><div class="progress-fill ' + cls + '" style="width:' + pct + '%"></div></div><span class="kpi-val"><strong>' + fmtNum(actual) + "</strong> / " + fmtNum(goal) + " · " + pct + "%</span></div>";
+            });
+            if (k.note) html += '<p class="kpi-note">' + esc(k.note) + "</p>";
+            html += "</div>";
+          });
+          html += "</div>";
+          body.innerHTML = html;
+        }
+
+        /* ---------------- 4) Phân tích đối thủ ---------------- */
+        function openCompModal(p, c) {
+          openModal(
+            c ? "Sửa đối thủ" : "Thêm đối thủ",
+            "Ghi lại đối thủ theo từng nhóm từ khoá: quy mô nội dung, backlink, traffic và chỉ số uy tín, kèm phân tích backlink/entity.",
+            [
+              { name: "group", label: "Nhóm từ khoá / chủ đề", full: true, value: c ? c.group : "", placeholder: "Ví dụ: Lắp đặt camera trọn gói" },
+              { name: "website", label: "Website đối thủ", required: true, full: true, value: c ? c.website : "", placeholder: "Ví dụ: doitac.com" },
+              { name: "articles", label: "Số bài viết", type: "number", min: 0, value: c ? c.articles : "" },
+              { name: "backlinks", label: "Số backlink / referring domains", type: "number", min: 0, value: c ? c.backlinks : "" },
+              { name: "traffic", label: "Traffic ước tính / tháng", type: "number", min: 0, value: c ? c.traffic : "" },
+              { name: "da", label: "DA", type: "number", min: 0, max: 100, value: c ? c.da : "" },
+              { name: "dr", label: "DR", type: "number", min: 0, max: 100, value: c ? c.dr : "" },
+              { name: "note", label: "Nhận xét / điểm mạnh — điểm yếu", type: "textarea", full: true, value: c ? c.note : "" },
+              { name: "entity", label: "Phân tích backlink & entity của đối thủ", type: "textarea", full: true, value: c ? c.entity : "", placeholder: "Nguồn link chính, hệ thống social/entity, báo chí…" }
+            ],
+            function (data) {
+              var rec = {
+                group: (data.group || "").trim(), website: data.website.trim(),
+                articles: data.articles === "" ? null : Number(data.articles),
+                backlinks: data.backlinks === "" ? null : Number(data.backlinks),
+                traffic: data.traffic === "" ? null : Number(data.traffic),
+                da: data.da === "" ? null : Number(data.da),
+                dr: data.dr === "" ? null : Number(data.dr),
+                note: (data.note || "").trim(), entity: (data.entity || "").trim()
+              };
+              if (c) { Object.assign(c, rec); toast("Đã cập nhật đối thủ"); }
+              else { rec.id = uid(); p.competitors.push(rec); toast("Đã thêm đối thủ"); }
+              save(); render();
+            },
+            c ? function () {
+              askConfirm("Xoá đối thủ?", "Đối thủ “" + c.website + "” sẽ bị xoá khỏi danh sách phân tích.", function () {
+                p.competitors = p.competitors.filter(function (x) { return x.id !== c.id; });
+                save(); render(); toast("Đã xoá đối thủ");
+              });
+            } : null
+          );
+        }
+        function renderCompetitors(p) {
+          var body = document.getElementById("compBody");
+          if (p.competitors.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Chưa có đối thủ nào</h3><p>Thêm website đối thủ theo từng nhóm từ khoá để so sánh số bài viết, backlink, traffic và DA/DR với website của bạn.</p><button class="btn primary" type="button" data-add-comp>+ Thêm đối thủ</button></div>';
+            return;
+          }
+          var q = document.getElementById("compSearch").value.trim().toLowerCase();
+          var rows = p.competitors.filter(function (c) {
+            if (q && (c.website + " " + (c.group || "") + " " + (c.note || "")).toLowerCase().indexOf(q) === -1) return false;
+            return true;
+          });
+          if (rows.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Không có đối thủ khớp tìm kiếm</h3><p>Thử từ khoá tìm kiếm khác.</p></div>';
+            return;
+          }
+          var html = '<div class="table-wrap"><table><thead><tr><th>Website đối thủ</th><th>Nhóm từ khoá</th><th class="num">Bài viết</th><th class="num">Backlink</th><th class="num">Traffic</th><th class="num">DA</th><th class="num">DR</th><th>Ghi chú / Entity</th><th></th></tr></thead><tbody>';
+          rows.forEach(function (c) {
+            var url = safeUrl(c.website);
+            html += "<tr>" +
+              '<td data-label="Website"><span class="cell-main">' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(shortUrl(c.website)) + "</a>" : esc(c.website)) + "</span></td>" +
+              '<td data-label="Nhóm từ khoá">' + esc(c.group || "—") + "</td>" +
+              '<td class="num" data-label="Bài viết">' + fmtNum(c.articles) + "</td>" +
+              '<td class="num" data-label="Backlink">' + fmtNum(c.backlinks) + "</td>" +
+              '<td class="num" data-label="Traffic">' + fmtNum(c.traffic) + "</td>" +
+              '<td class="num" data-label="DA">' + fmtNum(c.da) + "</td>" +
+              '<td class="num" data-label="DR">' + fmtNum(c.dr) + "</td>" +
+              '<td data-label="Ghi chú"><div>' + (c.note ? '<div style="white-space:pre-wrap">' + esc(c.note) + "</div>" : "") + (c.entity ? '<div class="cell-sub" style="word-break:normal;white-space:pre-wrap;margin-top:4px">Backlink/Entity: ' + esc(c.entity) + "</div>" : "") + (!c.note && !c.entity ? "—" : "") + "</div></td>" +
+              '<td data-label=""><div class="row-actions"><button class="btn small ghost" type="button" data-edit-comp="' + c.id + '">Sửa</button></div></td></tr>';
+          });
+          html += "</tbody></table></div>";
+          body.innerHTML = html;
+        }
+
+        /* ---------------- 5) Checklist Content SEO ---------------- */
+        var SEO_CRITERIA = [
+          { id: "c01", group: "Tiêu đề & Meta", title: "Thẻ title chứa từ khoá chính", hint: "Từ khoá chính xuất hiện trong title, ưu tiên ở đầu." },
+          { id: "c02", group: "Tiêu đề & Meta", title: "Thẻ title không quá 60 ký tự", hint: "Tránh bị cắt ngắn trên kết quả tìm kiếm." },
+          { id: "c03", group: "Tiêu đề & Meta", title: "Meta description 150–160 ký tự, chứa từ khoá và CTA", hint: "Tóm tắt đúng ý chính, kích thích click." },
+          { id: "c04", group: "Tiêu đề & Meta", title: "URL ngắn gọn, chứa từ khoá, không dấu", hint: "Dạng /tu-khoa-chinh/, tránh ký tự đặc biệt." },
+          { id: "c05", group: "Mở bài & Từ khoá", title: "Từ khoá chính xuất hiện trong sapo / 100 từ đầu tiên", hint: "Đoạn mở bài nêu rõ vấn đề và chứa từ khoá chính." },
+          { id: "c06", group: "Mở bài & Từ khoá", title: "Có duy nhất 1 thẻ H1 chứa từ khoá chính", hint: "H1 khác title một chút để tránh trùng lặp cứng." },
+          { id: "c07", group: "Mở bài & Từ khoá", title: "Mật độ từ khoá tự nhiên (khoảng 1–1,5%)", hint: "Không nhồi nhét; rải đều đầu, giữa, cuối bài." },
+          { id: "c08", group: "Mở bài & Từ khoá", title: "Có từ khoá phụ, từ đồng nghĩa / LSI", hint: "Bao phủ biến thể tìm kiếm liên quan." },
+          { id: "c09", group: "Cấu trúc nội dung", title: "H2/H3 phân cấp rõ ràng, có từ khoá phụ ở H2", hint: "Mỗi H2 là một ý chính của bài." },
+          { id: "c10", group: "Cấu trúc nội dung", title: "Độ dài nội dung đạt mục tiêu (thường ≥ 1.500 từ với bài pillar)", hint: "Dài hơn hoặc ngang đối thủ top đầu cùng chủ đề." },
+          { id: "c11", group: "Cấu trúc nội dung", title: "Có mục lục (TOC) cho bài dài", hint: "Giúp người đọc và Google hiểu cấu trúc bài." },
+          { id: "c12", group: "Cấu trúc nội dung", title: "Có đoạn FAQ cuối bài", hint: "Trả lời câu hỏi thường gặp quanh từ khoá; cân nhắc schema FAQ." },
+          { id: "c13", group: "Cấu trúc nội dung", title: "Có CTA rõ ràng trong bài", hint: "Kêu gọi hành động phù hợp ý định tìm kiếm." },
+          { id: "c14", group: "Hình ảnh & Media", title: "Hình ảnh có alt chứa từ khoá liên quan", hint: "Tên file ảnh không dấu, có gạch nối." },
+          { id: "c15", group: "Hình ảnh & Media", title: "Ảnh được nén dung lượng, đúng kích thước hiển thị", hint: "Tránh làm chậm tốc độ tải trang." },
+          { id: "c16", group: "Liên kết", title: "Có ít nhất 2–3 internal link tới bài liên quan", hint: "Anchor text đa dạng, trỏ đúng URL đích của cụm chủ đề." },
+          { id: "c17", group: "Liên kết", title: "Có external link tới nguồn uy tín khi cần dẫn chứng", hint: "Mở tab mới, nội dung liên quan trực tiếp." },
+          { id: "c18", group: "Kỹ thuật & Xuất bản", title: "Không trùng lặp chủ đề với bài đã có (tránh cannibalization)", hint: "Một từ khoá — một URL đích." },
+          { id: "c19", group: "Kỹ thuật & Xuất bản", title: "Đã kiểm tra hiển thị mobile và tốc độ tải", hint: "Đọc thử toàn bài trên điện thoại trước khi xuất bản." },
+          { id: "c20", group: "Kỹ thuật & Xuất bản", title: "Bài đã được Google index", hint: "Kiểm tra bằng site: hoặc URL Inspection trong Search Console." }
+        ];
+        var seoSelectedArtId = "";
+        function seoCriteriaOf(p) {
+          return SEO_CRITERIA.concat(p.customSeoCriteria.map(function (c) {
+            return { id: c.id, group: "Tiêu chí riêng", title: c.title, hint: c.hint || "", custom: true };
+          }));
+        }
+        function seoScoreOf(p, a) {
+          var crit = seoCriteriaOf(p);
+          var checks = a.seoChecks || {};
+          var done = crit.filter(function (c) { return !!checks[c.id]; }).length;
+          return { done: done, total: crit.length, pct: crit.length ? Math.round(done / crit.length * 100) : 0 };
+        }
+        function openSeoCriterionModal(p) {
+          openModal(
+            "Thêm tiêu chí riêng",
+            "Tiêu chí này sẽ xuất hiện trong Checklist Content SEO của mọi bài viết trong dự án.",
+            [
+              { name: "title", label: "Tên tiêu chí", required: true, full: true, value: "" },
+              { name: "hint", label: "Hướng dẫn / ghi chú", type: "textarea", full: true, value: "" }
+            ],
+            function (data) {
+              p.customSeoCriteria.push({ id: "x" + uid(), title: data.title.trim(), hint: (data.hint || "").trim() });
+              save(); render(); toast("Đã thêm tiêu chí riêng");
+            },
+            null
+          );
+        }
+        function renderSeoCheck(p) {
+          var body = document.getElementById("seoBody");
+          var sel = document.getElementById("seoArtSelect");
+          if (p.articles.length === 0) {
+            sel.innerHTML = '<option value="">— Chưa có bài viết —</option>';
+            body.innerHTML = '<div class="empty-state"><h3>Chưa có bài viết để chấm checklist</h3><p>Hãy thêm bài viết ở tab Bài viết trước, rồi quay lại đây để chấm từng bài theo bộ tiêu chí chuẩn SEO.</p></div>';
+            return;
+          }
+          if (!seoSelectedArtId || !p.articles.some(function (a) { return a.id === seoSelectedArtId; })) {
+            seoSelectedArtId = p.articles[0].id;
+          }
+          sel.innerHTML = p.articles.map(function (a) {
+            var sc = seoScoreOf(p, a);
+            return '<option value="' + a.id + '"' + (a.id === seoSelectedArtId ? " selected" : "") + ">" + esc(a.title) + " — " + sc.pct + "%</option>";
+          }).join("");
+          var art = p.articles.find(function (a) { return a.id === seoSelectedArtId; });
+          if (!art.seoChecks || typeof art.seoChecks !== "object") art.seoChecks = {};
+          var score = seoScoreOf(p, art);
+          var badgeCls = score.pct >= 80 ? "good" : score.pct >= 50 ? "mid" : "bad";
+          var html = '<div class="panel" style="margin-bottom:16px"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between"><div><strong style="font-size:16px">' + esc(art.title) + '</strong><div style="font-size:13px;color:var(--muted);margin-top:2px">Trạng thái: ' + esc(art.status || "Ý tưởng") + (art.url ? ' · <a href="' + esc(safeUrl(art.url)) + '" target="_blank" rel="noopener">' + esc(shortUrl(art.url)) + "</a>" : "") + '</div></div><span class="score-badge ' + badgeCls + '">Điểm SEO: ' + score.done + "/" + score.total + " · " + score.pct + '%</span></div>' +
+            '<div class="progress-track" style="margin-top:12px"><div class="progress-fill' + (score.pct >= 80 ? "" : score.pct >= 50 ? " mid" : " low") + '" style="width:' + score.pct + '%"></div></div>' +
+            '<p style="font-size:13px;color:var(--muted);margin:10px 0 0">Bấm nút “Đạt / Chưa đạt” ở từng tiêu chí để chấm bài viết này. Kết quả được lưu cùng bài viết và đồng bộ Firebase như dữ liệu khác.</p></div>';
+          var crit = seoCriteriaOf(p);
+          var groups = [], seenG = {};
+          crit.forEach(function (c) { if (!seenG[c.group]) { seenG[c.group] = 1; groups.push(c.group); } });
+          groups.forEach(function (g) {
+            html += '<div class="check-group-title">' + esc(g) + '</div><div class="check-list">';
+            crit.filter(function (c) { return c.group === g; }).forEach(function (c) {
+              var on = !!art.seoChecks[c.id];
+              html += '<div class="check-row' + (on ? " done" : "") + '"><div class="check-main"><div class="check-title">' + esc(c.title) + "</div>" +
+                (c.hint ? '<div class="check-hint">' + esc(c.hint) + "</div>" : "") + "</div>" +
+                (c.custom ? '<button class="btn small danger-ghost" type="button" data-seo-del-criterion="' + c.id + '">Xoá tiêu chí</button>' : "") +
+                '<button class="toggle-pill' + (on ? " on" : "") + '" type="button" data-seo-toggle="' + c.id + '">' + (on ? "✓ Đạt" : "Chưa đạt") + "</button></div>";
+            });
+            html += "</div>";
+          });
+          body.innerHTML = html;
+        }
+
+        /* ---------------- 6) Chăm sóc Social ---------------- */
+        var SOCIAL_PLATFORMS = ["Facebook", "YouTube", "TikTok", "Instagram", "Zalo OA", "LinkedIn", "X (Twitter)", "Pinterest", "Blog / Web 2.0", "Khác"];
+        function trafficChip(v) {
+          return v === "yes" ? '<span class="chip green">Đã chạy traffic</span>' : '<span class="chip gray">Chưa chạy traffic</span>';
+        }
+        function openSocialModal(p, s) {
+          openModal(
+            s ? "Sửa mục social" : "Thêm mục social",
+            "Theo dõi chăm sóc social: profile, người phụ trách, link bài đã share theo từng đợt, trạng thái index và traffic.",
+            [
+              { name: "platform", label: "Nền tảng", type: "select", options: SOCIAL_PLATFORMS, value: s ? s.platform : "Facebook" },
+              { name: "profileUrl", label: "Link profile / kênh", full: true, value: s ? s.profileUrl : "", placeholder: "https://…" },
+              { name: "assignee", label: "Người phụ trách", value: s ? s.assignee : "" },
+              { name: "round", label: "Đợt share (ví dụ: Đợt 1)", value: s ? s.round : "" },
+              { name: "shareUrl", label: "Link bài đã share", full: true, value: s ? s.shareUrl : "", placeholder: "https://…" },
+              { name: "date", label: "Ngày share", type: "date", value: s ? s.date : "" },
+              { name: "indexed", label: "Trạng thái index của link share", type: "select", options: [{ value: "unknown", label: "Chưa kiểm tra" }, { value: "yes", label: "Đã index" }, { value: "no", label: "Chưa index" }], value: s ? s.indexed : "unknown" },
+              { name: "trafficRun", label: "Đã chạy traffic cho link này?", type: "select", options: [{ value: "no", label: "Chưa chạy" }, { value: "yes", label: "Đã chạy" }], value: s ? s.trafficRun : "no" },
+              { name: "note", label: "Ghi chú", type: "textarea", full: true, value: s ? s.note : "" }
+            ],
+            function (data) {
+              var rec = {
+                platform: data.platform, profileUrl: (data.profileUrl || "").trim(),
+                assignee: (data.assignee || "").trim(), round: (data.round || "").trim(),
+                shareUrl: (data.shareUrl || "").trim(), date: data.date || "",
+                indexed: data.indexed, trafficRun: data.trafficRun, note: (data.note || "").trim()
+              };
+              if (s) { Object.assign(s, rec); toast("Đã cập nhật mục social"); }
+              else { rec.id = uid(); p.socials.push(rec); toast("Đã thêm mục social"); }
+              save(); render();
+            },
+            s ? function () {
+              askConfirm("Xoá mục social?", "Mục social này sẽ bị xoá khỏi danh sách chăm sóc.", function () {
+                p.socials = p.socials.filter(function (x) { return x.id !== s.id; });
+                save(); render(); toast("Đã xoá mục social");
+              });
+            } : null
+          );
+        }
+        function renderSocial(p) {
+          var body = document.getElementById("socialBody");
+          if (p.socials.length === 0) {
+            body.innerHTML = '<div class="empty-state"><h3>Chưa có mục social nào</h3><p>Thêm các profile social và link bài đã share theo từng đợt để theo dõi trạng thái index và việc chạy traffic hỗ trợ SEO.</p><button class="btn primary" type="button" data-add-social>+ Thêm mục social</button></div>';
+            return;
+          }
+          var q = document.getElementById("socialSearch").value.trim().toLowerCase();
+          var idx = document.getElementById("socialIndexFilter").value;
+          var indexedCount = p.socials.filter(function (s) { return s.indexed === "yes"; }).length;
+          var html = '<div class="summary-strip"><span class="chip blue">Tổng mục: ' + p.socials.length + '</span><span class="chip green">Đã index: ' + indexedCount + '</span><span class="chip red">Chưa index: ' + p.socials.filter(function (s) { return s.indexed === "no"; }).length + '</span><span class="chip gray">Đã chạy traffic: ' + p.socials.filter(function (s) { return s.trafficRun === "yes"; }).length + "</span></div>";
+          var rows = p.socials.filter(function (s) {
+            if (idx && (s.indexed || "unknown") !== idx) return false;
+            if (q && (s.platform + " " + (s.profileUrl || "") + " " + (s.assignee || "") + " " + (s.shareUrl || "") + " " + (s.round || "")).toLowerCase().indexOf(q) === -1) return false;
+            return true;
+          });
+          if (rows.length === 0) {
+            body.innerHTML = html + '<div class="empty-state"><h3>Không có mục social khớp bộ lọc</h3><p>Thử xoá bớt điều kiện tìm kiếm hoặc lọc.</p></div>';
+            return;
+          }
+          html += '<div class="table-wrap"><table><thead><tr><th>Nền tảng / Profile</th><th>Người phụ trách</th><th>Link bài share</th><th>Đợt</th><th>Ngày</th><th>Index</th><th>Traffic</th><th></th></tr></thead><tbody>';
+          rows.forEach(function (s) {
+            var prof = safeUrl(s.profileUrl), share = safeUrl(s.shareUrl);
+            html += "<tr>" +
+              '<td data-label="Nền tảng"><div><span class="cell-main">' + esc(s.platform) + "</span>" +
+              (s.profileUrl ? '<div class="cell-sub">' + (prof ? '<a href="' + esc(prof) + '" target="_blank" rel="noopener">' + esc(shortUrl(s.profileUrl)) + "</a>" : esc(shortUrl(s.profileUrl))) + "</div>" : "") +
+              (s.note ? '<div class="cell-sub" style="word-break:normal">' + esc(s.note) + "</div>" : "") + "</div></td>" +
+              '<td data-label="Người phụ trách">' + esc(s.assignee || "—") + "</td>" +
+              '<td data-label="Link share">' + (s.shareUrl ? (share ? '<a href="' + esc(share) + '" target="_blank" rel="noopener">' + esc(shortUrl(s.shareUrl)) + "</a>" : esc(shortUrl(s.shareUrl))) : "—") + "</td>" +
+              '<td data-label="Đợt">' + esc(s.round || "—") + "</td>" +
+              '<td data-label="Ngày">' + fmtDate(s.date) + "</td>" +
+              '<td data-label="Index">' + indexedChip(s.indexed) + "</td>" +
+              '<td data-label="Traffic">' + trafficChip(s.trafficRun) + "</td>" +
+              '<td data-label=""><div class="row-actions"><button class="btn small ghost" type="button" data-edit-social="' + s.id + '">Sửa</button></div></td></tr>';
+          });
+          html += "</tbody></table></div>";
+          body.innerHTML = html;
+        }
 
         /* ---------------- Google Search Console ---------------- */
         var GSC_CONFIG_KEY = "seo-manager-gsc-config-v1";
